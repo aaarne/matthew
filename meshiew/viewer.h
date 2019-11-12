@@ -55,13 +55,13 @@ using namespace nanogui;
 
 class Viewer : public nanogui::Screen {
 public:
-    Viewer() :
-        nanogui::Screen(Eigen::Vector2i(1024, 768), "DGP Viewer") {
+    Viewer(std::string mesh_file) :
+        nanogui::Screen(Eigen::Vector2i(1024, 768), "Meshiew") {
 
         initGUI();
         initShaders();
 
-        loadMesh("../data/small_sphere.obj");
+        loadMesh(mesh_file);
         meshProcess();
     }
 
@@ -122,11 +122,6 @@ public:
                                         surface_mesh::Color(1.0f, 1.0f, 1.0f));
         v_color_gaussian_curv = mesh.vertex_property<surface_mesh::Color>("v:color_gaussian_curv",
                                         surface_mesh::Color(1.0f, 1.0f, 1.0f));
-
-        /*Surface_mesh::Vertex_property<Scalar> vertex_valence = mesh.vertex_property<Scalar>("v:valence", 0);
-        for (auto v: mesh.vertices()) {
-            vertex_valence[v] = mesh.valence(v);
-        }*/
 
         auto vertex_valence = mesh.vertex_property<Scalar>("v:valence", 0);
 
@@ -244,44 +239,9 @@ public:
         window->setPosition(Vector2i(15, 15));
         window->setLayout(new GroupLayout());
 
-        PopupButton *popupBtn = new PopupButton(window, "Open a mesh", ENTYPO_ICON_EXPORT);
-        Popup *popup = popupBtn->popup();
-        popup->setLayout(new GroupLayout());
-
-        Button* b = new Button(popup, "Bunny");
-        b->setCallback([this]() {
-            loadMesh("../data/bunny.off");
-            meshProcess();
-        });
-        b = new Button(popup, "Max-Plank");
-        b->setCallback([this]() {
-            loadMesh("../data/max.off");
-            meshProcess();
-        });
-
-        b = new Button(popup, "Scanned face");
-        b->setCallback([this]() {
-            loadMesh("../data/scanned_face.off");
-            meshProcess();
-        });
-
-        b = new Button(popup, "Eight");
-        b->setCallback([this]() {
-            loadMesh("../data/eight.off");
-            meshProcess();
-        });
-
-        b = new Button(popup, "Small Sphere");
-        b->setCallback([this]() {
-            loadMesh("../data/small_sphere.obj");
-            meshProcess();
-        });
-
-        b = new Button(popup, "Big Sphere");
-        b->setCallback([this]() {
-            loadMesh("../data/big_sphere.obj");
-            meshProcess();
-        });
+        PopupButton *popupBtn;
+        Popup *popup;
+        Button *b;
 
         new Label(window, "Display Control", "sans-bold");
 

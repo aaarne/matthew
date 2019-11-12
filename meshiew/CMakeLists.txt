@@ -6,7 +6,5 @@ file(GLOB_RECURSE SHADERS "*.glsl")
 
 add_executable(${EXERCISENAME} ${SOURCES} ${HEADERS} ${SHADERS})
 target_link_libraries(${EXERCISENAME} surface_mesh)
-# Lastly, additional libraries may have been built for you.  In addition to linking
-# against NanoGUI, we need to link against those as well.
 target_link_libraries(${EXERCISENAME} nanogui ${NANOGUI_EXTRA_LIBS})
 

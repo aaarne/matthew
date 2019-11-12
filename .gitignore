@@ -6,3 +6,5 @@
 */submission/*.cpp
 */submission/*.h
 *.zip
+cmake-build-debug
+cmake-build-release

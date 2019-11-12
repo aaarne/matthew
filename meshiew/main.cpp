@@ -12,11 +12,15 @@
 //-----------------------------------------------------------------------------
 #include "viewer.h"
 
-int main(int /* argc */, char ** /* argv */) {
+int main(int argc , char *argv[]) {
+    if (argc < 2) {
+        throw std::invalid_argument("No mesh given.");
+    }
+
     try {
         nanogui::init();
         {
-            nanogui::ref<Viewer> app = new Viewer();
+            nanogui::ref<Viewer> app = new Viewer(argv[1]);
             app->drawAll();
             app->setVisible(true);
             nanogui::mainloop();
