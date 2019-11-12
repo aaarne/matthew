@@ -56,12 +56,12 @@ using namespace nanogui;
 class Viewer : public nanogui::Screen {
 public:
     Viewer(std::string mesh_file) :
-        nanogui::Screen(Eigen::Vector2i(1024, 768), "Meshiew") {
+        nanogui::Screen(Eigen::Vector2i(1024, 768), "Meshiew"), filename(mesh_file) {
 
+        loadMesh(mesh_file);
         initGUI();
         initShaders();
 
-        loadMesh(mesh_file);
         meshProcess();
     }
 
@@ -235,7 +235,7 @@ public:
     }
 
     void initGUI() {
-        window = new Window(this, "Controls");
+        window = new Window(this, "Display Control");
         window->setPosition(Vector2i(15, 15));
         window->setLayout(new GroupLayout());
 
@@ -243,7 +243,6 @@ public:
         Popup *popup;
         Button *b;
 
-        new Label(window, "Display Control", "sans-bold");
 
         b = new Button(window, "Wireframe");
         b->setFlags(Button::ToggleButton);
@@ -316,6 +315,29 @@ public:
             std::cout<<"Min Gauss curvature value is: " << min_gauss_curvature << std::endl;
             std::cout<<"Max Gauss curvature value is: " << max_gauss_curvature << std::endl;
         });
+
+        window = new Window(this, "Mesh Info");
+        window->setPosition(Vector2i(800, 15));
+        auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
+//        grid->setColAlignment({Alignment::Maximum, Alignment::Fill});
+        grid->setSpacing(0, 10);
+        window->setLayout(grid);
+
+        new Label(window, "Filename:", "sans-bold");
+        new Label(window, filename, "sans");
+
+        auto info_line = [&](std::string title, int value) {
+            new Label(window, title + ":");
+            auto *box = new IntBox<int>(window);
+            box->setEditable(false);
+            box->setFontSize(14);
+            box->setValue(value);
+        };
+
+        info_line("Vertices", mesh.n_vertices());
+        info_line("Faces", mesh.n_faces());
+        info_line("Edges", mesh.n_edges());
+        info_line("Euler Characteristic", mesh.n_vertices() - mesh.n_edges() + mesh.n_faces());
 
         performLayout();
     }
@@ -728,6 +750,8 @@ private:
     Surface_mesh::Vertex_property<surface_mesh::Color> v_color_curvature;
     Surface_mesh::Vertex_property<surface_mesh::Color> v_color_gaussian_curv;
     Surface_mesh mesh;
+
+    std::string filename;
 
     enum COLOR_MODE : int { NORMAL = 0, VALENCE = 1, CURVATURE = 2 };
     enum CURVATURE_TYPE : int { UNIMEAN = 2, LAPLACEBELTRAMI = 3, GAUSS = 4 };
