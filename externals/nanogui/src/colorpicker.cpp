@@ -28,13 +28,11 @@ ColorPicker::ColorPicker(Widget *parent, const Color& color) : PopupButton(paren
 
     PopupButton::setChangeCallback([&](bool) {
         setColor(backgroundColor());
-        mCallback(backgroundColor());
     });
 
     mColorWheel->setCallback([&](const Color &value) {
         mPickButton->setBackgroundColor(value);
         mPickButton->setTextColor(value.contrastingColor());
-        mCallback(value);
     });
 
     mPickButton->setCallback([&]() {

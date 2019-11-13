@@ -16,6 +16,8 @@
 #include <nanogui/screen.h>
 #include <nanogui/window.h>
 #include <nanogui/layout.h>
+#include <nanogui/colorpicker.h>
+#include <nanogui/checkbox.h>
 #include <nanogui/popupbutton.h>
 #include <nanogui/label.h>
 #include <nanogui/button.h>
@@ -56,7 +58,10 @@ using namespace nanogui;
 class Viewer : public nanogui::Screen {
 public:
     Viewer(std::string mesh_file) :
-        nanogui::Screen(Eigen::Vector2i(1024, 768), "Meshiew"), filename(mesh_file) {
+        nanogui::Screen(Eigen::Vector2i(1024, 768), "Meshiew"),
+        filename(mesh_file),
+        base_color(0, 0.6, 0.15),
+        edge_color(0, 0, 0) {
 
         loadMesh(mesh_file);
         initGUI();
@@ -243,30 +248,19 @@ public:
         Popup *popup;
         Button *b;
 
-
+        new Label(window, "Mesh Graph");
         b = new Button(window, "Wireframe");
         b->setFlags(Button::ToggleButton);
         b->setChangeCallback([this](bool wireframe) {
             this->wireframe =! this->wireframe;
         });
+        new Label(window, "Normals");
         b = new Button(window, "Normals");
         b->setFlags(Button::ToggleButton);
         b->setChangeCallback([this](bool normals) {
             this->normals =! this->normals;
         });
 
-        b = new Button(window, "Valence");
-        b->setFlags(Button::ToggleButton);
-        b->setChangeCallback([this](bool valence) {
-            if (valence) {
-                this->color_mode = VALENCE;
-            } else {
-                this->color_mode = NORMAL;
-            }
-            this->popupCurvature->setPushed(false);
-        });
-
-        //new Label(window, "Normals", "sans-bold");
         popupBtn = new PopupButton(window, "Normal Weights");
         popup = popupBtn->popup();
         popup->setLayout(new GroupLayout());
@@ -285,6 +279,17 @@ public:
         b->setCallback([this](){
             this->normals_computation = 2;
         });
+
+        new Label(window, "Color Mode");
+        b = new Button(window, "Reset");
+        b->setCallback([this]() {
+            this->color_mode = NORMAL;
+        });
+        b = new Button(window, "Valence");
+        b->setCallback([this]() {
+            this->color_mode = VALENCE;
+        });
+
 
         popupCurvature = new PopupButton(window, "Curvature");
         popup = popupCurvature->popup();
@@ -316,10 +321,25 @@ public:
             std::cout<<"Max Gauss curvature value is: " << max_gauss_curvature << std::endl;
         });
 
+        new Label(window, "Base Color:", "sans-bold");
+        auto cp = new ColorPicker(window, base_color);
+        cp->setFixedSize({100, 20});
+        cp->setCallback([this](const nanogui::Color &c) {
+            base_color << c.r(), c.g(), c.b();
+            cout << "New base color: " << base_color.transpose() << endl;
+        });
+
+        new Label(window, "Edge Color:", "sans-bold");
+        cp = new ColorPicker(window, edge_color);
+        cp->setFixedSize({100, 20});
+        cp->setCallback([this](const nanogui::Color &c) {
+            edge_color << c.r(), c.g(), c.b();
+            cout << "New edge color: " << edge_color.transpose() << endl;
+        });
+
         window = new Window(this, "Mesh Info");
-        window->setPosition(Vector2i(800, 15));
+        window->setPosition(Vector2i(750, 15));
         auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
-//        grid->setColAlignment({Alignment::Maximum, Alignment::Fill});
         grid->setSpacing(0, 10);
         window->setLayout(grid);
 
@@ -338,6 +358,18 @@ public:
         info_line("Faces", mesh.n_faces());
         info_line("Edges", mesh.n_edges());
         info_line("Euler Characteristic", mesh.n_vertices() - mesh.n_edges() + mesh.n_faces());
+
+
+        new Label(window, "Closed");
+        CheckBox *check = new CheckBox(window, "");
+        bool closed = true;
+        for (const auto &v : mesh.vertices()) {
+            closed &= !mesh.is_boundary(v);
+        }
+        check->setChecked(closed);
+        check->setEnabled(false);
+
+
 
         performLayout();
     }
@@ -617,8 +649,7 @@ public:
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
 
-        Vector3f colors(0.98, 0.59, 0.04);
-        mShader.setUniform("intensity", colors);
+        mShader.setUniform("intensity", base_color);
         mShader.setUniform("normal_selector", normals_computation);
         if (color_mode == CURVATURE) {
             mShader.setUniform("color_mode", int(curvature_type));
@@ -630,8 +661,7 @@ public:
         if (wireframe) {
             glDisable(GL_POLYGON_OFFSET_FILL);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            colors << 0.0, 0.0, 0.0;
-            mShader.setUniform("intensity", colors);
+            mShader.setUniform("intensity", edge_color);
             mShader.drawIndexed(GL_TRIANGLES, 0, n_faces);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
@@ -763,6 +793,8 @@ private:
 
     CURVATURE_TYPE curvature_type = UNIMEAN;
     COLOR_MODE color_mode = NORMAL;
+
+    Vector3f base_color, edge_color;
 
     PopupButton *popupCurvature;
     FloatBox<float>* coefTextBox;
