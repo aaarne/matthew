@@ -1,26 +1,21 @@
-//=============================================================================
-//
-//   Code framework for the lecture
-//
-//   "Digital 3D Geometry Processing"
-//
-//   Gaspard Zoss
-//
-//   Copyright (C) 2016 by Computer Graphics and Geometry Laboratory,
-//         EPF Lausanne
-//
-//-----------------------------------------------------------------------------
-#include "viewer.h"
+#include "matthew.h"
 
-int main(int argc , char *argv[]) {
+int main(int argc, char *argv[]) {
+    std::string filename;
     if (argc < 2) {
-        throw std::invalid_argument("No mesh given.");
+        filename = nanogui::file_dialog({
+                                                {"obj", "Wavefront OBJ"},
+                                                {"off", "Object File Format"},
+                                                {"stl", "STL"}
+                                        }, false);
+    } else {
+        filename = argv[1];
     }
 
     try {
         nanogui::init();
         {
-            nanogui::ref<Viewer> app = new Viewer(argv[1]);
+            nanogui::ref<Matthew> app = new Matthew(filename);
             app->drawAll();
             app->setVisible(true);
             nanogui::mainloop();
