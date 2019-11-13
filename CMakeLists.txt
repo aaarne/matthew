@@ -26,4 +26,4 @@ file(GLOB_RECURSE DATA "${PROJECT_SOURCE_DIR}/data/*")
 add_custom_target(DGP_DATA SOURCES ${DATA})
 copy_files_once(${DATA})
 
-add_subdirectory(meshiew)
+add_subdirectory(matthew)

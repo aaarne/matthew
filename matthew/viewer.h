@@ -58,7 +58,7 @@ using namespace nanogui;
 class Viewer : public nanogui::Screen {
 public:
     Viewer(std::string mesh_file) :
-        nanogui::Screen(Eigen::Vector2i(1024, 768), "Meshiew"),
+        nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew"),
         filename(mesh_file),
         base_color(0, 0.6, 0.15),
         edge_color(0, 0, 0) {
