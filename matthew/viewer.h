@@ -1,16 +1,3 @@
-//=============================================================================
-//
-//   Code framework for the lecture
-//
-//   "Digital 3D Geometry Processing"
-//
-//   Gaspard Zoss
-//
-//   Copyright (C) 2016 by Computer Graphics and Geometry Laboratory,
-//         EPF Lausanne
-//
-//   Edited 2017
-//-----------------------------------------------------------------------------
 #include <nanogui/opengl.h>
 #include <nanogui/glutil.h>
 #include <nanogui/screen.h>
@@ -61,6 +48,7 @@ public:
         nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew"),
         filename(mesh_file),
         base_color(0, 0.6, 0.15),
+        light_color(1, 1, 1),
         edge_color(0, 0, 0) {
 
         loadMesh(mesh_file);
@@ -321,16 +309,30 @@ public:
             std::cout<<"Max Gauss curvature value is: " << max_gauss_curvature << std::endl;
         });
 
-        new Label(window, "Base Color:", "sans-bold");
-        auto cp = new ColorPicker(window, base_color);
+        PopupButton *colorPoputBtn = new PopupButton(window, "Colors");
+        Popup *colorPopup = colorPoputBtn->popup();
+        auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
+        grid->setSpacing(0, 10);
+        colorPopup->setLayout(grid);
+
+        new Label(colorPopup, "Base Color:", "sans-bold");
+        auto cp = new ColorPicker(colorPopup, base_color);
         cp->setFixedSize({100, 20});
         cp->setCallback([this](const nanogui::Color &c) {
             base_color << c.r(), c.g(), c.b();
             cout << "New base color: " << base_color.transpose() << endl;
         });
 
-        new Label(window, "Edge Color:", "sans-bold");
-        cp = new ColorPicker(window, edge_color);
+        new Label(colorPopup, "Light Color:", "sans-bold");
+        cp = new ColorPicker(colorPopup, light_color);
+        cp->setFixedSize({100, 20});
+        cp->setCallback([this](const nanogui::Color &c) {
+            light_color << c.r(), c.g(), c.b();
+            cout << "New light color: " << base_color.transpose() << endl;
+        });
+
+        new Label(colorPopup, "Edge Color:", "sans-bold");
+        cp = new ColorPicker(colorPopup, edge_color);
         cp->setFixedSize({100, 20});
         cp->setCallback([this](const nanogui::Color &c) {
             edge_color << c.r(), c.g(), c.b();
@@ -339,7 +341,7 @@ public:
 
         window = new Window(this, "Mesh Info");
         window->setPosition(Vector2i(750, 15));
-        auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
+        grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
         grid->setSpacing(0, 10);
         window->setLayout(grid);
 
@@ -430,6 +432,7 @@ public:
             "#version 330\n"
             "uniform int color_mode;\n"
             "uniform vec3 intensity;\n"
+            "uniform vec3 light_color;\n"
 
             "in vec3 fcolor;\n"
             "in vec3 fnormal;\n"
@@ -441,13 +444,13 @@ public:
             "void main() {\n"
             "    vec3 c = vec3(0.0);\n"
             "    if (color_mode == 0) {\n"
-            "        c += vec3(1.0)*vec3(0.18, 0.1, 0.1);\n"
+            "        c += vec3(1.0)*vec3(0.1, 0.1, 0.1);\n"
             "        vec3 n = normalize(fnormal);\n"
             "        vec3 v = normalize(view_dir);\n"
             "        vec3 l = normalize(light_dir);\n"
             "        float lambert = dot(n,l);\n"
             "        if(lambert > 0.0) {\n"
-            "            c += vec3(1.0)*vec3(0.9, 0.5, 0.5)*lambert;\n"
+            "            c += vec3(1.0)*light_color*lambert;\n"
             "            vec3 v = normalize(view_dir);\n"
             "            vec3 r = reflect(-l,n);\n"
             "            c += vec3(1.0)*vec3(0.8, 0.8, 0.8)*pow(max(dot(r,v), 0.0), 90.0);\n"
@@ -650,6 +653,7 @@ public:
         }
 
         mShader.setUniform("intensity", base_color);
+        mShader.setUniform("light_color", light_color);
         mShader.setUniform("normal_selector", normals_computation);
         if (color_mode == CURVATURE) {
             mShader.setUniform("color_mode", int(curvature_type));
@@ -794,7 +798,7 @@ private:
     CURVATURE_TYPE curvature_type = UNIMEAN;
     COLOR_MODE color_mode = NORMAL;
 
-    Vector3f base_color, edge_color;
+    Vector3f base_color, edge_color, light_color;
 
     PopupButton *popupCurvature;
     FloatBox<float>* coefTextBox;
