@@ -1,542 +1,35 @@
 #include "matthew.h"
+#include "mesh_processing.h"
 #include <surface_mesh/Surface_mesh.h>
 
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::string;
+using std::vector;
+using std::pair;
+using std::to_string;
 using std::min;
 using std::max;
-using namespace surface_mesh;
+using namespace Eigen;
 
-typedef Surface_mesh Mesh;
+typedef surface_mesh::Surface_mesh Mesh;
 
-void Matthew::calc_weights() {
-    calc_edges_weights();
-    calc_vertices_weights();
+Matthew::Matthew() :
+        nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew"),
+        base_color(0, 0.6, 0.15),
+        light_color(1, 1, 1),
+        edge_color(0, 0, 0) {
+
 }
 
-void Matthew::calc_edges_weights() {
-    Mesh::Halfedge h0, h1, h2;
-    Mesh::Vertex v0, v1;
-    Point p0, p1, p2, d0, d1;
-    Scalar w;
-    auto eweight = mesh.edge_property<Scalar>("e:weight", 0);
-    for (auto e: mesh.edges()) {
-        w = 0.0;
+void Matthew::run(std::string mesh_file) {
+    this->filename = mesh_file;
+    loadMesh(filename);
+    initGUI();
+    initShaders();
+    meshProcess();
 
-        h0 = mesh.halfedge(e, 0);
-        v0 = mesh.to_vertex(h0);
-        p0 = mesh.position(v0);
-
-        h1 = mesh.halfedge(e, 1);
-        v1 = mesh.to_vertex(h1);
-        p1 = mesh.position(v1);
-
-        h2 = mesh.next_halfedge(h0);
-        p2 = mesh.position(mesh.to_vertex(h2));
-        d0 = normalize(p0 - p2);
-        d1 = normalize(p1 - p2);
-        w += 1.0 / tan(acos(min(0.99f, max(-0.99f, dot(d0, d1)))));
-
-        h2 = mesh.next_halfedge(h1);
-        p2 = mesh.position(mesh.to_vertex(h2));
-        d0 = normalize(p0 - p2);
-        d1 = normalize(p1 - p2);
-        w += 1.0 / tan(acos(min(0.99f, max(-0.99f, dot(d0, d1)))));
-
-        w = max(0.0f, w);
-        eweight[e] = w * 0.5f;
-    }
-}
-
-void Matthew::calc_vertices_weights() {
-    Mesh::Face_around_vertex_circulator vf_c, vf_end;
-    Mesh::Vertex_around_face_circulator fv_c;
-    Scalar area;
-    auto vweight = mesh.vertex_property<Scalar>("v:weight", 0);
-
-    for (auto v: mesh.vertices()) {
-        area = 0.0;
-        vf_c = mesh.faces(v);
-
-        if (!vf_c) {
-            continue;
-        }
-
-        vf_end = vf_c;
-
-        do {
-            fv_c = mesh.vertices(*vf_c);
-
-            const Point &P = mesh.position(*fv_c);
-            ++fv_c;
-            const Point &Q = mesh.position(*fv_c);
-            ++fv_c;
-            const Point &R = mesh.position(*fv_c);
-
-            area += norm(cross(Q - P, R - P)) * 0.5f * 0.3333f;
-
-        } while (++vf_c != vf_end);
-
-        vweight[v] = 0.5f / area;
-    }
-}
-
-void Matthew::computeValence() {
-    Mesh::Vertex_property <Scalar> vertex_valence =
-            mesh.vertex_property<Scalar>("v:valence", 0);
-    for (auto v: mesh.vertices()) {
-        vertex_valence[v] = mesh.valence(v);
-    }
-}
-
-void Matthew::computeNormalsWithConstantWeights() {
-    Point default_normal(0.0, 1.0, 0.0);
-    Mesh::Vertex_property <Point> v_cste_weights_n =
-            mesh.vertex_property<Point>("v:cste_weights_n", default_normal);
-
-    for (const auto &v : mesh.vertices()) {
-        Vec3 normal(0, 0, 0);
-        for (const Mesh::Face &face : mesh.faces(v)) { // this uses the circulator
-            normal += mesh.compute_face_normal(face);
-        }
-        v_cste_weights_n[v] = normal.normalize();
-    }
-}
-
-void Matthew::computeNormalsByAreaWeights() {
-    Point default_normal(0.0, 1.0, 0.0);
-    Mesh::Vertex_property <Point> v_area_weights_n =
-            mesh.vertex_property<Point>("v:area_weight_n", default_normal);
-
-    for (const auto &v : mesh.vertices()) {
-        Vec3 normal(0, 0, 0);
-        for (const Mesh::Face &face : mesh.faces(v)) {
-            vector<Point> vertices;
-
-            for (const auto &vertex : mesh.vertices(face)) {
-                vertices.push_back(mesh.position(vertex));
-            }
-
-            assert(vertices.size() == 3);
-
-            double A = .5 * norm(cross(
-                    vertices[1] - vertices[0],
-                    vertices[2] - vertices[0]
-            ));
-
-            normal += A * mesh.compute_face_normal(face);
-        }
-        v_area_weights_n[v] = normal.normalize();
-    }
-}
-
-void Matthew::computeNormalsWithAngleWeights() {
-    Point default_normal(0.0, 1.0, 0.0);
-    Mesh::Vertex_property <Point> v_angle_weights_n =
-            mesh.vertex_property<Point>("v:angle_weight_n", default_normal);
-
-    for (const auto &v : mesh.vertices()) {
-        Vec3 normal(0, 0, 0);
-        for (const Mesh::Face &face : mesh.faces(v)) {
-            vector<Point> vertices;
-
-            for (const auto &vertex : mesh.vertices(face)) {
-                vertices.push_back(mesh.position(vertex));
-            }
-
-            Vec3 a(vertices[1] - vertices[0]);
-            Vec3 b(vertices[2] - vertices[0]);
-
-            double alpha = acos(min(0.99f, max(-0.99f, dot(a, b) / (norm(a) * norm(b)))));
-
-            normal += alpha * mesh.compute_face_normal(face);
-        }
-        v_angle_weights_n[v] = normal.normalize();
-    }
-}
-
-void Matthew::calc_uniform_laplacian() {
-    Mesh::Vertex_property <Scalar> v_uniLaplace = mesh.vertex_property<Scalar>("v:uniLaplace", 0);
-    Point laplace(0.0);
-    min_uniLaplace = 1000;
-    max_uniLaplace = -1000;
-
-    for (const auto &v : mesh.vertices()) {
-        laplace = 0;
-        int N = 0;
-        for (const auto &v2 : mesh.vertices(v)) {
-            laplace += mesh.position(v2) - mesh.position(v);
-            N++;
-        }
-        v_uniLaplace[v] = norm(laplace / N);
-    }
-    max_uniLaplace = *std::max_element(v_uniLaplace.vector().begin(), v_uniLaplace.vector().end());
-    min_uniLaplace = *std::min_element(v_uniLaplace.vector().begin(), v_uniLaplace.vector().end());
-}
-
-void Matthew::calc_mean_curvature() {
-    Mesh::Vertex_property <Scalar> v_curvature = mesh.vertex_property<Scalar>("v:curvature", 0);
-    Mesh::Edge_property <Scalar> e_weight = mesh.edge_property<Scalar>("e:weight", 0);
-    Mesh::Vertex_property <Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
-    Point laplace(0.0);
-    min_mean_curvature = 1000;
-    max_mean_curvature = -1000;
-
-    for (const auto &v : mesh.vertices()) {
-        laplace = 0;
-        for (const auto &v2 : mesh.vertices(v)) {
-            Mesh::Edge e = mesh.find_edge(v, v2);
-            laplace += e_weight[e] * (mesh.position(v2) - mesh.position(v));
-        }
-        laplace *= v_weight[v];
-        v_curvature[v] = norm(laplace);
-    }
-    max_mean_curvature = *std::max_element(v_curvature.vector().begin(), v_curvature.vector().end());
-    min_mean_curvature = *std::min_element(v_curvature.vector().begin(), v_curvature.vector().end());
-}
-
-void Matthew::calc_gauss_curvature() {
-    Mesh::Vertex_property <Scalar> v_gauss_curvature = mesh.vertex_property<Scalar>("v:gauss_curvature", 0);
-    Mesh::Vertex_property <Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
-    Mesh::Vertex_around_vertex_circulator vv_c, vv_c2, vv_end;
-    Point d0, d1;
-    Scalar angles, cos_angle;
-    Scalar lb(-1.0f), ub(1.0f);
-    min_gauss_curvature = 1000;
-    max_gauss_curvature = -1000;
-
-    for (const auto &v : mesh.vertices()) {
-        if (mesh.is_boundary(v)) continue;
-
-        angles = 0.0f;
-
-        vv_c = mesh.vertices(v);
-        vv_c2 = mesh.vertices(v);
-
-        Vec3 pos = mesh.position(v);
-        for (const auto &v1 : vv_c) {
-            ++vv_c2; //this is safe as the circulator iterator is implemented circularly. i.e. incrementing end -> begin
-
-            d0 = mesh.position(v1) - pos;
-            d1 = mesh.position(*vv_c2) - pos;
-
-            cos_angle = min(ub, max(lb, dot(d0, d1) / (norm(d0) * norm(d1))));
-            angles += acos(cos_angle);
-        }
-
-        v_gauss_curvature[v] = float(2 * M_PI - angles) * 2.0f * v_weight[v];
-
-    }
-
-    max_gauss_curvature = *std::max_element(v_gauss_curvature.vector().begin(), v_gauss_curvature.vector().end());
-    min_gauss_curvature = *std::min_element(v_gauss_curvature.vector().begin(), v_gauss_curvature.vector().end());
-}
-
-void Matthew::loadMesh(string filename) {
-    if (!mesh.read(filename)) {
-        std::cerr << "Mesh not found, exiting." << std::endl;
-        exit(-1);
-    }
-
-    cout << "Mesh " << filename << " loaded." << endl;
-    n_vertices = mesh.n_vertices();
-    cout << "# of vertices : " << n_vertices << endl;
-    n_faces = mesh.n_faces();
-    cout << "# of faces : " << n_faces << endl;
-    n_edges = mesh.n_edges();
-    cout << "# of edges : " << n_edges << endl;
-
-    mesh_center = computeCenter(&mesh);
-    float dist_max = 0.0f;
-    for (auto v: mesh.vertices()) {
-        if (distance(mesh_center, mesh.position(v)) > dist_max) {
-            dist_max = distance(mesh_center, mesh.position(v));
-        }
-    }
-
-    mCamera.arcball = Arcball();
-    mCamera.arcball.setSize(mSize);
-    mCamera.modelZoom = 2 / dist_max;
-    mCamera.modelTranslation = -Vector3f(mesh_center.x, mesh_center.y, mesh_center.z);
-}
-
-void Matthew::meshProcess() {
-    Point default_normal(0.0, 1.0, 0.0);
-    Surface_mesh::Vertex_property<Point> vertex_normal =
-            mesh.vertex_property<Point>("v:normal");
-    mesh.update_face_normals();
-    mesh.update_vertex_normals();
-    v_color_valence = mesh.vertex_property<surface_mesh::Color>("v:color_valence",
-                                                                surface_mesh::Color(1.0f, 1.0f, 1.0f));
-    v_color_unicurvature = mesh.vertex_property<surface_mesh::Color>("v:color_unicurvature",
-                                                                     surface_mesh::Color(1.0f, 1.0f, 1.0f));
-    v_color_curvature = mesh.vertex_property<surface_mesh::Color>("v:color_curvature",
-                                                                  surface_mesh::Color(1.0f, 1.0f, 1.0f));
-    v_color_gaussian_curv = mesh.vertex_property<surface_mesh::Color>("v:color_gaussian_curv",
-                                                                      surface_mesh::Color(1.0f, 1.0f, 1.0f));
-
-    auto vertex_valence = mesh.vertex_property<Scalar>("v:valence", 0);
-
-    auto v_cste_weights_n = mesh.vertex_property<Point>("v:cste_weights_n");
-    auto v_area_weights_n = mesh.vertex_property<Point>("v:area_weight_n");
-    auto v_angle_weights_n = mesh.vertex_property<Point>("v:angle_weight_n");
-
-    auto v_uniLaplace = mesh.vertex_property<Scalar>("v:uniLaplace", 0);
-    auto v_curvature = mesh.vertex_property<Scalar>("v:curvature", 0);
-    auto v_gauss_curvature = mesh.vertex_property<Scalar>("v:gauss_curvature", 0);
-
-    calc_weights();
-    calc_uniform_laplacian();
-    calc_mean_curvature();
-    calc_gauss_curvature();
-    computeValence();
-    computeNormalsWithConstantWeights();
-    computeNormalsByAreaWeights();
-    computeNormalsWithAngleWeights();
-    color_coding(vertex_valence, &mesh, v_color_valence, 100 /* bound */);
-    color_coding(v_uniLaplace, &mesh, v_color_unicurvature);
-    color_coding(v_curvature, &mesh, v_color_curvature);
-    color_coding(v_gauss_curvature, &mesh, v_color_gaussian_curv);
-
-    int j = 0;
-    MatrixXf mesh_points(3, n_vertices);
-    MatrixXu indices(3, n_faces);
-
-    for (auto f: mesh.faces()) {
-        vector<float> vv(3.0f);
-        int k = 0;
-        for (auto v: mesh.vertices(f)) {
-            vv[k] = v.idx();
-            ++k;
-        }
-        indices.col(j) << vv[0], vv[1], vv[2];
-        ++j;
-    }
-
-    // Create big matrices to send the data to the GPU with the required
-    // format
-    MatrixXf color_valence_attrib(3, n_vertices);
-    MatrixXf color_unicurvature_attrib(3, n_vertices);
-    MatrixXf color_curvature_attrib(3, n_vertices);
-    MatrixXf color_gaussian_curv_attrib(3, n_vertices);
-    MatrixXf normals_attrib(3, n_vertices);
-    MatrixXf normal_cste_weights_attrib(3, n_vertices);
-    MatrixXf normal_area_weights_attrib(3, n_vertices);
-    MatrixXf normal_angle_weights_attrib(3, n_vertices);
-
-    j = 0;
-    for (auto v: mesh.vertices()) {
-        mesh_points.col(j) << mesh.position(v).x,
-                mesh.position(v).y,
-                mesh.position(v).z;
-        color_valence_attrib.col(j) << v_color_valence[v].x,
-                v_color_valence[v].y,
-                v_color_valence[v].z;
-
-        color_unicurvature_attrib.col(j) << v_color_unicurvature[v].x,
-                v_color_unicurvature[v].y,
-                v_color_unicurvature[v].z;
-
-        color_curvature_attrib.col(j) << v_color_curvature[v].x,
-                v_color_curvature[v].y,
-                v_color_curvature[v].z;
-
-        color_gaussian_curv_attrib.col(j) << v_color_gaussian_curv[v].x,
-                v_color_gaussian_curv[v].y,
-                v_color_gaussian_curv[v].z;
-
-        normals_attrib.col(j) << vertex_normal[v].x,
-                vertex_normal[v].y,
-                vertex_normal[v].z;
-
-        normal_cste_weights_attrib.col(j) << v_cste_weights_n[v].x,
-                v_cste_weights_n[v].y,
-                v_cste_weights_n[v].z;
-
-        normal_area_weights_attrib.col(j) << v_area_weights_n[v].x,
-                v_area_weights_n[v].y,
-                v_area_weights_n[v].z;
-
-        normal_angle_weights_attrib.col(j) << v_angle_weights_n[v].x,
-                v_angle_weights_n[v].y,
-                v_angle_weights_n[v].z;
-        ++j;
-    }
-
-    mShader.bind();
-    mShader.uploadIndices(indices);
-    mShader.uploadAttrib("position", mesh_points);
-    mShader.uploadAttrib("valence_color", color_valence_attrib);
-    mShader.uploadAttrib("unicruvature_color", color_unicurvature_attrib);
-    mShader.uploadAttrib("curvature_color", color_curvature_attrib);
-    mShader.uploadAttrib("gaussian_curv_color", color_gaussian_curv_attrib);
-    //mShader.uploadAttrib("normal", normals_attrib);
-    mShader.uploadAttrib("n_cste_weights", normal_cste_weights_attrib);
-    mShader.uploadAttrib("n_area_weights", normal_area_weights_attrib);
-    mShader.uploadAttrib("n_angle_weights", normal_angle_weights_attrib);
-    mShader.setUniform("color_mode", int(color_mode));
-    mShader.setUniform("intensity", Vector3f(0.98, 0.59, 0.04));
-
-    mShaderNormals.bind();
-    mShaderNormals.uploadIndices(indices);
-    mShaderNormals.uploadAttrib("position", mesh_points);
-    mShaderNormals.uploadAttrib("n_cste_weights", normal_cste_weights_attrib);
-    mShaderNormals.uploadAttrib("n_area_weights", normal_area_weights_attrib);
-    mShaderNormals.uploadAttrib("n_angle_weights", normal_angle_weights_attrib);
-    //mShaderNormals.uploadAttrib("normal", normals_attrib);
-}
-
-void Matthew::initGUI() {
-    window = new Window(this, "Display Control");
-    window->setPosition(Vector2i(15, 15));
-    window->setLayout(new GroupLayout());
-
-    PopupButton *popupBtn;
-    Popup *popup;
-    Button *b;
-
-    new Label(window, "Mesh Graph");
-    b = new Button(window, "Wireframe");
-    b->setFlags(Button::ToggleButton);
-    b->setChangeCallback([this](bool wireframe) {
-        this->wireframe = !this->wireframe;
-    });
-    new Label(window, "Normals");
-    b = new Button(window, "Normals");
-    b->setFlags(Button::ToggleButton);
-    b->setChangeCallback([this](bool normals) {
-        this->normals = !this->normals;
-    });
-
-    popupBtn = new PopupButton(window, "Normal Weights");
-    popup = popupBtn->popup();
-    popup->setLayout(new GroupLayout());
-    b = new Button(popup, "Constant Weights");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->normals_computation = 0;
-    });
-    b = new Button(popup, "Area Weights");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->normals_computation = 1;
-    });
-    b = new Button(popup, "Angle Weights");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->normals_computation = 2;
-    });
-
-    new Label(window, "Color Mode");
-    b = new Button(window, "Plain");
-    b->setCallback([this]() {
-        this->color_mode = NORMAL;
-    });
-
-    b = new Button(window, "Light");
-    b->setCallback([this]() {
-        this->color_mode = NORMAL;
-    });
-    b = new Button(window, "Valence");
-    b->setCallback([this]() {
-        this->color_mode = VALENCE;
-    });
-
-    popupCurvature = new PopupButton(window, "Curvature");
-    popup = popupCurvature->popup();
-    popupCurvature->setCallback([this]() {
-        this->color_mode = CURVATURE;
-    });
-    popup->setLayout(new GroupLayout());
-    new Label(popup, "Curvature Type", "sans-bold");
-    b = new Button(popup, "Uniform Laplacian");
-    b->setFlags(Button::RadioButton);
-    b->setPushed(true);
-    b->setCallback([this]() {
-        this->curvature_type = UNIMEAN;
-        std::cout << "Min Uniform Laplace value is: " << min_uniLaplace << std::endl;
-        std::cout << "Max Uniform Laplace value is: " << max_uniLaplace << std::endl;
-    });
-    b = new Button(popup, "Laplace-Beltrami");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->curvature_type = LAPLACEBELTRAMI;
-        std::cout << "Min Laplace-Beltrami curvature value is: " << min_mean_curvature << std::endl;
-        std::cout << "Max Laplace-Beltrami curvature value is: " << max_mean_curvature << std::endl;
-    });
-    b = new Button(popup, "Gaussian");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->curvature_type = GAUSS;
-        std::cout << "Min Gauss curvature value is: " << min_gauss_curvature << std::endl;
-        std::cout << "Max Gauss curvature value is: " << max_gauss_curvature << std::endl;
-    });
-
-    PopupButton *colorPoputBtn = new PopupButton(window, "Colors");
-    Popup *colorPopup = colorPoputBtn->popup();
-    auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
-    grid->setSpacing(0, 10);
-    colorPopup->setLayout(grid);
-
-    new Label(colorPopup, "Base Color:", "sans-bold");
-    auto cp = new ColorPicker(colorPopup, base_color);
-    cp->setFixedSize({100, 20});
-    cp->setCallback([this](const nanogui::Color &c) {
-        base_color << c.r(), c.g(), c.b();
-        cout << "New base color: " << base_color.transpose() << endl;
-    });
-
-    new Label(colorPopup, "Light Color:", "sans-bold");
-    cp = new ColorPicker(colorPopup, light_color);
-    cp->setFixedSize({100, 20});
-    cp->setCallback([this](const nanogui::Color &c) {
-        light_color << c.r(), c.g(), c.b();
-        cout << "New light color: " << base_color.transpose() << endl;
-    });
-
-    new Label(colorPopup, "Edge Color:", "sans-bold");
-    cp = new ColorPicker(colorPopup, edge_color);
-    cp->setFixedSize({100, 20});
-    cp->setCallback([this](const nanogui::Color &c) {
-        edge_color << c.r(), c.g(), c.b();
-        cout << "New edge color: " << edge_color.transpose() << endl;
-    });
-
-    window = new Window(this, "Mesh Info");
-    window->setPosition(Vector2i(750, 15));
-    grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
-    grid->setSpacing(0, 10);
-    window->setLayout(grid);
-
-    new Label(window, "Filename:", "sans-bold");
-    new Label(window, filename, "sans");
-
-    auto info_line = [&](std::string title, int value) {
-        new Label(window, title + ":");
-        auto *box = new IntBox<int>(window);
-        box->setEditable(false);
-        box->setFontSize(14);
-        box->setValue(value);
-    };
-
-    bool closed = true;
-    for (const auto &v : mesh.vertices()) {
-        closed &= !mesh.is_boundary(v);
-    }
-    int euler = mesh.n_vertices() - mesh.n_edges() + mesh.n_faces();
-
-    info_line("Vertices", mesh.n_vertices());
-    info_line("Faces", mesh.n_faces());
-    info_line("Edges", mesh.n_edges());
-    info_line("Euler Characteristic", euler);
-    if (closed) {
-        info_line("Genus", -int(.5 * euler) + 1);
-    }
-
-    new Label(window, "Closed");
-    CheckBox *check = new CheckBox(window, "");
-    check->setChecked(closed);
-    check->setEnabled(false);
-
-    performLayout();
 }
 
 void Matthew::initShaders() {
@@ -745,16 +238,6 @@ Matthew::~Matthew() {
     mShaderNormals.free();
 }
 
-Point Matthew::computeCenter(Surface_mesh *mesh) {
-    Point center = Point(0.0f);
-
-    for (auto v: mesh->vertices()) {
-        center += mesh->position(v);
-    }
-
-    return center / mesh->n_vertices();
-}
-
 bool Matthew::keyboardEvent(int key, int scancode, int action, int modifiers) {
     if (Screen::keyboardEvent(key, scancode, action, modifiers)) {
         return true;
@@ -816,13 +299,13 @@ void Matthew::drawContents() {
     } else {
         mShader.setUniform("color_mode", int(color_mode));
     }
-    mShader.drawIndexed(GL_TRIANGLES, 0, n_faces);
+    mShader.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
 
     if (wireframe) {
         glDisable(GL_POLYGON_OFFSET_FILL);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         mShader.setUniform("intensity", edge_color);
-        mShader.drawIndexed(GL_TRIANGLES, 0, n_faces);
+        mShader.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
@@ -831,7 +314,7 @@ void Matthew::drawContents() {
         mShaderNormals.setUniform("MV", mv);
         mShaderNormals.setUniform("P", p);
         mShaderNormals.setUniform("normal_selector", normals_computation);
-        mShaderNormals.drawIndexed(GL_TRIANGLES, 0, n_faces);
+        mShaderNormals.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
     }
 }
 
@@ -888,6 +371,11 @@ bool Matthew::mouseButtonEvent(const Vector2i &p, int button, bool down, int mod
     return true;
 }
 
+void Matthew::set_color(Surface_mesh::Vertex v, const surface_mesh::Color &col,
+                        Surface_mesh::Vertex_property<surface_mesh::Color> color_prop) {
+    color_prop[v] = col;
+}
+
 void Matthew::computeCameraMatrices(Eigen::Matrix4f &model, Eigen::Matrix4f &view, Eigen::Matrix4f &proj) {
 
     view = nanogui::lookAt(mCamera.eye, mCamera.center, mCamera.up);
@@ -902,3 +390,163 @@ void Matthew::computeCameraMatrices(Eigen::Matrix4f &model, Eigen::Matrix4f &vie
     model = nanogui::translate(model, mCamera.modelTranslation);
 }
 
+
+void Matthew::initGUI() {
+    using namespace nanogui;
+    window = new Window(this, "Display Control");
+    window->setPosition(Vector2i(15, 15));
+    window->setLayout(new GroupLayout());
+
+    PopupButton *popupBtn;
+    Button *b;
+
+    new Label(window, "Mesh Graph");
+    b = new Button(window, "Wireframe");
+    b->setFlags(Button::ToggleButton);
+    b->setChangeCallback([this](bool wireframe) {
+        this->wireframe = wireframe;
+    });
+    wireframeBtn = b;
+
+    new Label(window, "Normals");
+    b = new Button(window, "Normals");
+    b->setFlags(Button::ToggleButton);
+    b->setChangeCallback([this](bool normals) {
+        this->normals = !this->normals;
+    });
+
+    popupBtn = new PopupButton(window, "Normal Weights");
+    Popup *popup = popupBtn->popup();
+    popup->setLayout(new GroupLayout());
+    b = new Button(popup, "Constant Weights");
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->normals_computation = 0;
+    });
+    b = new Button(popup, "Area Weights");
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->normals_computation = 1;
+    });
+    b = new Button(popup, "Angle Weights");
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->normals_computation = 2;
+    });
+
+    new Label(window, "Color Mode");
+    b = new Button(window, "Plain");
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->color_mode = PLAIN;
+        this->wireframeBtn->setPushed(true);
+        this->wireframe = true;
+    });
+
+    b = new Button(window, "Sexy");
+    b->setPushed(true);
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->color_mode = NORMAL;
+        this->wireframeBtn->setPushed(false);
+        this->wireframe = false;
+    });
+    b = new Button(window, "Valence");
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->color_mode = VALENCE;
+    });
+
+    popupCurvature = new PopupButton(window, "Curvature");
+    popupCurvature->setFlags(Button::RadioButton);
+    Popup *curvPopup = popupCurvature->popup();
+    popupCurvature->setCallback([this, curvPopup]() {
+        this->color_mode = CURVATURE;
+    });
+    curvPopup->setLayout(new GroupLayout());
+    new Label(curvPopup, "Curvature Type", "sans-bold");
+    b = new Button(curvPopup, "Uniform Laplacian");
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->curvature_type = UNIMEAN;
+    });
+    b = new Button(curvPopup, "Laplace-Beltrami");
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->curvature_type = LAPLACEBELTRAMI;
+    });
+    b = new Button(curvPopup, "Gaussian");
+    b->setFlags(Button::RadioButton);
+    b->setPushed(true);
+    b->setCallback([this]() {
+        this->curvature_type = GAUSS;
+    });
+
+    PopupButton *colorPoputBtn = new PopupButton(window, "Colors");
+    Popup *colorPopup = colorPoputBtn->popup();
+    auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
+    grid->setSpacing(0, 10);
+    colorPopup->setLayout(grid);
+
+    new Label(colorPopup, "Base Color:", "sans-bold");
+    auto cp = new ColorPicker(colorPopup, base_color);
+    cp->setFixedSize({100, 20});
+    cp->setCallback([this](const Color &c) {
+        base_color << c.r(), c.g(), c.b();
+        cout << "New base color: " << base_color.transpose() << endl;
+    });
+
+    new Label(colorPopup, "Light Color:", "sans-bold");
+    cp = new ColorPicker(colorPopup, light_color);
+    cp->setFixedSize({100, 20});
+    cp->setCallback([this](const Color &c) {
+        light_color << c.r(), c.g(), c.b();
+        cout << "New light color: " << base_color.transpose() << endl;
+    });
+
+    new Label(colorPopup, "Edge Color:", "sans-bold");
+    cp = new ColorPicker(colorPopup, edge_color);
+    cp->setFixedSize({100, 20});
+    cp->setCallback([this](const Color &c) {
+        edge_color << c.r(), c.g(), c.b();
+        cout << "New edge color: " << edge_color.transpose() << endl;
+    });
+
+    window = new Window(this, "Mesh Info");
+    window->setPosition(Vector2i(750, 15));
+    grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
+    grid->setSpacing(0, 10);
+    window->setLayout(grid);
+
+    new Label(window, "Filename:", "sans-bold");
+    new Label(window, filename, "sans");
+
+    auto info_line = [&](std::string title, int value) {
+        new Label(window, title + ":");
+        auto *box = new IntBox<int>(window);
+        box->setEditable(false);
+        box->setFontSize(14);
+        box->setValue(value);
+    };
+
+    bool closed = true;
+    for (const auto &v : mesh.vertices()) {
+        closed &= !mesh.is_boundary(v);
+    }
+    int euler = mesh.n_vertices() - mesh.n_edges() + mesh.n_faces();
+
+    info_line("Vertices", mesh.n_vertices());
+    info_line("Faces", mesh.n_faces());
+    info_line("Edges", mesh.n_edges());
+    info_line("Euler Characteristic", euler);
+    if (closed) {
+        info_line("Genus", -int(.5 * euler) + 1);
+    }
+
+    new Label(window, "Closed");
+    CheckBox *check = new CheckBox(window, "");
+    check->setChecked(closed);
+    check->setEnabled(false);
+
+    performLayout();
+}

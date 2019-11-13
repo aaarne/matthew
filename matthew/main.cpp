@@ -1,13 +1,15 @@
-#include "matthew.h"
+#include "mesh_processing.h"
+
+using namespace std;
 
 int main(int argc, char *argv[]) {
     std::string filename;
     if (argc < 2) {
-        filename = nanogui::file_dialog({
-                                                {"obj", "Wavefront OBJ"},
-                                                {"off", "Object File Format"},
-                                                {"stl", "STL"}
-                                        }, false);
+        vector<pair<string, string>> filetypes;
+        filetypes.emplace_back("obj", "Wavefront OBJ");
+        filetypes.emplace_back("off", "Object File Format");
+        filetypes.emplace_back("stl", "STL");
+        filename = nanogui::file_dialog(filetypes, false);
     } else {
         filename = argv[1];
     }
@@ -15,20 +17,18 @@ int main(int argc, char *argv[]) {
     try {
         nanogui::init();
         {
-            nanogui::ref<Matthew> app = new Matthew(filename);
+            nanogui::ref<Matthew> app = new MatthewImpl();
+            app->run(filename);
             app->drawAll();
             app->setVisible(true);
             nanogui::mainloop();
         }
 
         nanogui::shutdown();
+
     } catch (const std::runtime_error &e) {
         std::string error_msg = std::string("Caught a fatal error: ") + std::string(e.what());
-#if defined(_WIN32)
-        MessageBoxA(nullptr, error_msg.c_str(), NULL, MB_ICONERROR | MB_OK);
-#else
         std::cerr << error_msg << std::endl;
-#endif
         return -1;
     }
 
