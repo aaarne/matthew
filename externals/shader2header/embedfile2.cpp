@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <string>
 #include <cstdarg>
+#include <iostream>
 
 using namespace std;
 
@@ -50,15 +51,15 @@ void make_c_string(string &in) {
 }
 
 void write_array_header() {
-    out("const char %s [] =\n", array_name.c_str());
+    out("    const char %s [] =\n", array_name.c_str());
 }
 
 void write_array_footer() {
-    out(";\n");
+    out("    ;\n");
 }
 
 void write_line(const string &line) {
-    out("\"%s\\n\"\n", line.c_str());
+    out("    \"%s\\n\"\n", line.c_str());
 }
 
 int main(int argc, char **args) {

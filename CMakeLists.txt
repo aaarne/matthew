@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.0)
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+
 get_filename_component(PROJECTNAME ${CMAKE_CURRENT_LIST_DIR} NAME)
 project(${PROJECTNAME})
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-include(cmake/ConfigureCompiler.cmake)
 find_package(NanoGUI)
 find_package(SurfaceMesh)
 
@@ -26,6 +29,6 @@ file(GLOB_RECURSE DATA "${PROJECT_SOURCE_DIR}/data/*")
 add_custom_target(DGP_DATA SOURCES ${DATA})
 copy_files_once(${DATA})
 
-add_subdirectory(externals/embedfile)
+add_subdirectory(externals/shader2header)
 
 add_subdirectory(matthew)

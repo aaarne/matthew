@@ -3,20 +3,16 @@ file(GLOB_RECURSE HEADERS "*.h")
 
 file(GLOB shaders "shaders/*.glsl")
 
-foreach(file ${shaders})
-    get_filename_component(SHADER_NAME ${file} NAME_WE)
-    set(HEADER_NAME ${CMAKE_BINARY_DIR}/${SHADER_NAME}.h)
-    add_custom_command(
-            OUTPUT ${HEADER_NAME}
-            COMMAND embedfile ${SHADER_NAME} ${file} ${HEADER_NAME}
-            DEPENDS ${file} ${CMAKE_SOURCE_DIR}/externals/embedfile/embedfile.cpp
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-    list(APPEND SHADER_HEADERS ${HEADER_NAME})
-endforeach()
+set(SHADER_HEADER_NAME ${CMAKE_BINARY_DIR}/shaders_gen.h)
+add_custom_command(
+        OUTPUT ${SHADER_HEADER_NAME}
+        COMMAND shader2header ${SHADER_HEADER_NAME} shaders
+        DEPENDS ${shaders};${CMAKE_SOURCE_DIR}/externals/shader2header/shader2header.cpp
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 include_directories(${CMAKE_BINARY_DIR})
 
-add_executable(matthew ${SOURCES} ${HEADERS} ${SHADER_HEADERS})
+add_executable(matthew ${SOURCES} ${HEADERS} ${SHADER_HEADER_NAME})
 target_link_libraries(matthew surface_mesh)
 target_link_libraries(matthew nanogui ${NANOGUI_EXTRA_LIBS})
 
