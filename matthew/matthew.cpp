@@ -2,22 +2,11 @@
 #include <surface_mesh/Surface_mesh.h>
 #include "shaders_gen.h"
 
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::string;
-using std::vector;
-using std::pair;
-using std::to_string;
-using std::min;
-using std::max;
+using namespace std;
 using namespace Eigen;
 
 typedef surface_mesh::Surface_mesh Mesh;
 
-/**
- *
- */
 Matthew::Matthew() :
         nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew"),
         base_color(0, 0.6, 0.15),
@@ -43,7 +32,6 @@ void Matthew::initShaders() {
 
 void Matthew::color_coding(Surface_mesh::Vertex_property <Scalar> prop, Surface_mesh *mesh,
                            Surface_mesh::Vertex_property <surface_mesh::Color> color_prop, int bound) {
-    // Get the value array
     std::vector<Scalar> values = prop.vector();
 
     // discard upper and lower bound
@@ -433,8 +421,6 @@ void Matthew::meshProcess() {
         ++j;
     }
 
-    // Create big matrices to send the data to the GPU with the required
-    // format
     MatrixXf color_valence_attrib(3, mesh.n_vertices());
     MatrixXf color_unicurvature_attrib(3, mesh.n_vertices());
     MatrixXf color_curvature_attrib(3, mesh.n_vertices());

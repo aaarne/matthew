@@ -16,8 +16,7 @@ void createline(int index) {
     EmitVertex();
     vec4 normal_mv = vec4(normalize(gs_in[index].normal_mat *
     gs_in[index].normal), 1.0f);
-    gl_Position = P * (MV * gl_in[index].gl_Position
-    + normal_mv * 0.035f);
+    gl_Position = P * (MV * gl_in[index].gl_Positio + normal_mv * 0.035f);
     EmitVertex();
     EndPrimitive();
 }
