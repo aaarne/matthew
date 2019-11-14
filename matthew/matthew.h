@@ -32,10 +32,19 @@ protected:
 
     virtual void loadMesh(std::string filename) = 0;
 
-    virtual void meshProcess() = 0;
-
+    void meshProcess();
     void initShaders();
     void initGUI();
+
+    virtual void computeValence() = 0;
+
+    virtual void calc_uniform_laplacian() = 0;
+
+    virtual void calc_mean_curvature() = 0;
+
+    virtual void calc_gauss_curvature() = 0;
+
+    virtual void calc_weights() = 0;
 
     void color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_mesh *mesh,
                       Surface_mesh::Vertex_property<surface_mesh::Color> color_prop, int bound = 20);
@@ -44,7 +53,6 @@ protected:
                           Surface_mesh::Vertex_property<surface_mesh::Color> color_prop);
 
     surface_mesh::Color value_to_color(Scalar value, Scalar min_value, Scalar max_value);
-
 
     Eigen::Vector3f base_color;
 
@@ -74,13 +82,11 @@ protected:
     std::string filename;
     Eigen::Vector3f light_color;
     CameraParameters mCamera;
-    // Variables for the viewer
     nanogui::GLShader mShader;
     nanogui::GLShader mShaderNormals;
     Surface_mesh mesh;
     Point mesh_center = Point(0.0f, 0.0f, 0.0f);
     bool normals = false;
-    int normals_computation = 0;
     nanogui::PopupButton *popupCurvature;
     Surface_mesh::Vertex_property<surface_mesh::Color> v_color_curvature;
     Surface_mesh::Vertex_property<surface_mesh::Color> v_color_gaussian_curv;
@@ -92,15 +98,15 @@ protected:
     nanogui::Button *wireframeBtn;
 
 private:
-    virtual bool keyboardEvent(int key, int scancode, int action, int modifiers);
+    bool keyboardEvent(int key, int scancode, int action, int modifiers);
 
-    virtual void draw(NVGcontext *ctx);
+    void draw(NVGcontext *ctx);
 
     Eigen::Vector2f getScreenCoord();
 
     void repaint();
 
-    virtual void drawContents();
+    void drawContents();
 
     bool scrollEvent(const Eigen::Vector2i &p, const Eigen::Vector2f &rel);
 

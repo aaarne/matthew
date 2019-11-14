@@ -10,31 +10,23 @@
 
 class MatthewImpl : public Matthew {
 protected:
-    void calc_weights();
+    void calc_weights() override;
 
     void calc_edges_weights();
 
     void calc_vertices_weights();
 
-    void computeValence();
+    void computeValence() override;
 
-    void computeNormalsWithConstantWeights();
+    void calc_uniform_laplacian() override;
 
-    void computeNormalsByAreaWeights();
+    void calc_mean_curvature() override;
 
-    void computeNormalsWithAngleWeights();
-
-    void calc_uniform_laplacian();
-
-    void calc_mean_curvature();
-
-    void calc_gauss_curvature();
+    void calc_gauss_curvature() override;
 
     static Point computeCenter(Surface_mesh *mesh);
 
     void loadMesh(std::string filename) override;
-
-    void meshProcess() override;
 
     int n_faces = 0;
     int n_vertices = 0;

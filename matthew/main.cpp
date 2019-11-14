@@ -14,23 +14,15 @@ int main(int argc, char *argv[]) {
         filename = argv[1];
     }
 
-    try {
-        nanogui::init();
-        {
-            nanogui::ref<Matthew> app = new MatthewImpl();
-            app->run(filename);
-            app->drawAll();
-            app->setVisible(true);
-            nanogui::mainloop();
-        }
+    nanogui::init();
 
-        nanogui::shutdown();
+    nanogui::ref<Matthew> app = new MatthewImpl();
+    app->run(filename);
+    app->drawAll();
+    app->setVisible(true);
+    nanogui::mainloop();
 
-    } catch (const std::runtime_error &e) {
-        std::string error_msg = std::string("Caught a fatal error: ") + std::string(e.what());
-        std::cerr << error_msg << std::endl;
-        return -1;
-    }
+    nanogui::shutdown();
 
     return 0;
 }

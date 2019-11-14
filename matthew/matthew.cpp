@@ -1,6 +1,6 @@
 #include "matthew.h"
-#include "mesh_processing.h"
 #include <surface_mesh/Surface_mesh.h>
+#include "shaders/shaders.h"
 
 using std::cout;
 using std::cerr;
@@ -34,156 +34,14 @@ void Matthew::run(std::string mesh_file) {
 
 void Matthew::initShaders() {
     // Shaders
-    mShader.init(
-            "a_simple_shader",
+    using namespace matthew;
+    mShader.init("a_simple_shader", simple_vertex_source, simple_fragment_source);
 
-            /* Vertex shader */
-            "#version 330\n"
-            "uniform mat4 MV;\n"
-            "uniform mat4 P;\n"
-            "uniform int color_mode;\n"
-            "uniform vec3 intensity;\n"
-            "uniform int normal_selector;\n"
-
-            "in vec3 position;\n"
-            "in vec3 valence_color;\n"
-            "in vec3 unicruvature_color;\n"
-            "in vec3 curvature_color;\n"
-            "in vec3 gaussian_curv_color;\n"
-            "in vec3 n_cste_weights;\n"
-            "in vec3 n_area_weights;\n"
-            "in vec3 n_angle_weights;\n"
-
-            "out vec3 fcolor;\n"
-            "out vec3 fnormal;\n"
-            "out vec3 view_dir;\n"
-            "out vec3 light_dir;\n"
-
-            "void main() {\n"
-            "    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
-            "    gl_Position = P * vpoint_mv;\n"
-            "    if (color_mode == 1) {\n"
-            "        fcolor = valence_color;\n"
-            "    } else if (color_mode == 2) {\n"
-            "        fcolor = unicruvature_color;\n"
-            "    } else if (color_mode == 3) {\n"
-            "        fcolor = curvature_color;\n"
-            "    } else if (color_mode == 4) {\n"
-            "        fcolor = gaussian_curv_color;\n"
-            "    } else {\n"
-            "        fcolor = intensity;\n"
-            "    }\n"
-            "    if (normal_selector == 0) {\n"
-            "       fnormal = mat3(transpose(inverse(MV))) * n_cste_weights;\n"
-            "    } else if(normal_selector == 1) {\n"
-            "       fnormal = mat3(transpose(inverse(MV))) * n_area_weights;\n"
-            "    } else {\n"
-            "       fnormal = mat3(transpose(inverse(MV))) * n_angle_weights;\n"
-            "    }\n"
-            "    light_dir = vec3(0.0, 3.0, 3.0) - vpoint_mv.xyz;\n"
-            "    view_dir = -vpoint_mv.xyz;\n"
-            "}",
-
-            /* Fragment shader */
-            "#version 330\n"
-            "uniform int color_mode;\n"
-            "uniform vec3 intensity;\n"
-            "uniform vec3 light_color;\n"
-
-            "in vec3 fcolor;\n"
-            "in vec3 fnormal;\n"
-            "in vec3 view_dir;\n"
-            "in vec3 light_dir;\n"
-
-            "out vec4 color;\n"
-
-            "void main() {\n"
-            "    vec3 c = vec3(0.0);\n"
-            "    if (color_mode == 0) {\n"
-            "        c += vec3(1.0)*vec3(0.1, 0.1, 0.1);\n"
-            "        vec3 n = normalize(fnormal);\n"
-            "        vec3 v = normalize(view_dir);\n"
-            "        vec3 l = normalize(light_dir);\n"
-            "        float lambert = dot(n,l);\n"
-            "        if(lambert > 0.0) {\n"
-            "            c += vec3(1.0)*light_color*lambert;\n"
-            "            vec3 v = normalize(view_dir);\n"
-            "            vec3 r = reflect(-l,n);\n"
-            "            c += vec3(1.0)*vec3(0.8, 0.8, 0.8)*pow(max(dot(r,v), 0.0), 90.0);\n"
-            "        }\n"
-            "        c *= fcolor;\n"
-            "    } else {\n"
-            "       c = fcolor;\n"
-            "    }\n"
-            "    if (intensity == vec3(0.0)) {\n"
-            "        c = intensity;\n"
-            "    }\n"
-            "    color = vec4(c, 1.0);\n"
-            "}"
-    );
-
-    mShaderNormals.init(
-            "normal_shader",
-            /* Vertex shader */
-            "#version 330\n\n"
-            "in vec3 position;\n"
-            "in vec3 n_cste_weights;\n"
-            "in vec3 n_area_weights;\n"
-            "in vec3 n_angle_weights;\n"
-            "uniform mat4 MV;\n"
-            "uniform mat4 P;\n"
-            "uniform int normal_selector;\n"
-            "out VS_OUT {\n"
-            "    mat3 normal_mat;\n"
-            "    vec3 normal;\n"
-            "} vs_out;\n"
-            "void main() {\n"
-            "  gl_Position = vec4(position, 1.0);\n"
-            "    if (normal_selector == 0) {\n"
-            "       vs_out.normal = n_cste_weights;\n"
-            "    } else if(normal_selector == 1) {\n"
-            "       vs_out.normal = n_area_weights;\n"
-            "    } else {\n"
-            "       vs_out.normal = n_angle_weights;\n"
-            "    }\n"
-            "    vs_out.normal_mat = mat3(transpose(inverse(MV)));\n"
-            "}",
-            /* Fragment shader */
-            "#version 330\n\n"
-            "out vec4 frag_color;\n"
-            "void main() {\n"
-            "   frag_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
-            "}",
-            /* Geometry shader */
-            "#version 330\n\n"
-            "layout (triangles) in;\n"
-            "layout (line_strip, max_vertices = 6) out;\n"
-            "uniform mat4 MV;\n"
-            "uniform mat4 P;\n"
-            "in VS_OUT {\n"
-            "    mat3 normal_mat;\n"
-            "    vec3 normal;\n"
-            "} gs_in[];\n"
-            "void createline(int index) {\n"
-            "   gl_Position = P * MV * gl_in[index].gl_Position;\n"
-            "   EmitVertex();\n"
-            "   vec4 normal_mv = vec4(normalize(gs_in[index].normal_mat *\n"
-            "                                   gs_in[index].normal), 1.0f);\n"
-            "   gl_Position = P * (MV * gl_in[index].gl_Position\n"
-            "                      + normal_mv * 0.035f);\n"
-            "   EmitVertex();\n"
-            "   EndPrimitive();\n"
-            "}\n"
-            "void main() {\n"
-            "   createline(0);\n"
-            "   createline(1);\n"
-            "   createline(2);\n"
-            "}"
-    );
+    mShaderNormals.init("normal_shader", normals_vertex_source, normals_fragment_source, normals_geometry_source);
 }
 
-void Matthew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_mesh *mesh,
-                           Surface_mesh::Vertex_property<surface_mesh::Color> color_prop, int bound) {
+void Matthew::color_coding(Surface_mesh::Vertex_property <Scalar> prop, Surface_mesh *mesh,
+                           Surface_mesh::Vertex_property <surface_mesh::Color> color_prop, int bound) {
     // Get the value array
     std::vector<Scalar> values = prop.vector();
 
@@ -293,7 +151,6 @@ void Matthew::drawContents() {
 
     mShader.setUniform("intensity", base_color);
     mShader.setUniform("light_color", light_color);
-    mShader.setUniform("normal_selector", normals_computation);
     if (color_mode == CURVATURE) {
         mShader.setUniform("color_mode", int(curvature_type));
     } else {
@@ -313,7 +170,6 @@ void Matthew::drawContents() {
         mShaderNormals.bind();
         mShaderNormals.setUniform("MV", mv);
         mShaderNormals.setUniform("P", p);
-        mShaderNormals.setUniform("normal_selector", normals_computation);
         mShaderNormals.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
     }
 }
@@ -372,7 +228,7 @@ bool Matthew::mouseButtonEvent(const Vector2i &p, int button, bool down, int mod
 }
 
 void Matthew::set_color(Surface_mesh::Vertex v, const surface_mesh::Color &col,
-                        Surface_mesh::Vertex_property<surface_mesh::Color> color_prop) {
+                        Surface_mesh::Vertex_property <surface_mesh::Color> color_prop) {
     color_prop[v] = col;
 }
 
@@ -413,25 +269,6 @@ void Matthew::initGUI() {
     b->setFlags(Button::ToggleButton);
     b->setChangeCallback([this](bool normals) {
         this->normals = !this->normals;
-    });
-
-    popupBtn = new PopupButton(window, "Normal Weights");
-    Popup *popup = popupBtn->popup();
-    popup->setLayout(new GroupLayout());
-    b = new Button(popup, "Constant Weights");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->normals_computation = 0;
-    });
-    b = new Button(popup, "Area Weights");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->normals_computation = 1;
-    });
-    b = new Button(popup, "Angle Weights");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->normals_computation = 2;
     });
 
     new Label(window, "Color Mode");
@@ -549,4 +386,105 @@ void Matthew::initGUI() {
     check->setEnabled(false);
 
     performLayout();
+}
+
+void Matthew::meshProcess() {
+    using namespace surface_mesh;
+    Point default_normal(0.0, 1.0, 0.0);
+    Surface_mesh::Vertex_property<Point> vertex_normal =
+            mesh.vertex_property<Point>("v:normal");
+    mesh.update_face_normals();
+    mesh.update_vertex_normals();
+    v_color_valence = mesh.vertex_property<Color>("v:color_valence",
+                                                  Color(1.0f, 1.0f, 1.0f));
+    v_color_unicurvature = mesh.vertex_property<Color>("v:color_unicurvature",
+                                                       Color(1.0f, 1.0f, 1.0f));
+    v_color_curvature = mesh.vertex_property<Color>("v:color_curvature",
+                                                    Color(1.0f, 1.0f, 1.0f));
+    v_color_gaussian_curv = mesh.vertex_property<Color>("v:color_gaussian_curv",
+                                                        Color(1.0f, 1.0f, 1.0f));
+
+    auto vertex_valence = mesh.vertex_property<Scalar>("v:valence", 0);
+
+    auto v_uniLaplace = mesh.vertex_property<Scalar>("v:uniLaplace", 0);
+    auto v_curvature = mesh.vertex_property<Scalar>("v:curvature", 0);
+    auto v_gauss_curvature = mesh.vertex_property<Scalar>("v:gauss_curvature", 0);
+
+    calc_weights();
+    calc_uniform_laplacian();
+    calc_mean_curvature();
+    calc_gauss_curvature();
+    computeValence();
+
+    color_coding(vertex_valence, &mesh, v_color_valence, 100);
+    color_coding(v_uniLaplace, &mesh, v_color_unicurvature);
+    color_coding(v_curvature, &mesh, v_color_curvature);
+    color_coding(v_gauss_curvature, &mesh, v_color_gaussian_curv);
+
+    int j = 0;
+    MatrixXf mesh_points(3, mesh.n_vertices());
+    MatrixXi indices(3, mesh.n_faces());
+
+    for (auto f: mesh.faces()) {
+        vector<float> vv(3.0f);
+        int k = 0;
+        for (auto v: mesh.vertices(f)) {
+            vv[k] = v.idx();
+            ++k;
+        }
+        indices.col(j) << vv[0], vv[1], vv[2];
+        ++j;
+    }
+
+    // Create big matrices to send the data to the GPU with the required
+    // format
+    MatrixXf color_valence_attrib(3, mesh.n_vertices());
+    MatrixXf color_unicurvature_attrib(3, mesh.n_vertices());
+    MatrixXf color_curvature_attrib(3, mesh.n_vertices());
+    MatrixXf color_gaussian_curv_attrib(3, mesh.n_vertices());
+    MatrixXf normals_attrib(3, mesh.n_vertices());
+
+    j = 0;
+    for (auto v: mesh.vertices()) {
+        mesh_points.col(j) << mesh.position(v).x,
+                mesh.position(v).y,
+                mesh.position(v).z;
+        color_valence_attrib.col(j) << v_color_valence[v].x,
+                v_color_valence[v].y,
+                v_color_valence[v].z;
+
+        color_unicurvature_attrib.col(j) << v_color_unicurvature[v].x,
+                v_color_unicurvature[v].y,
+                v_color_unicurvature[v].z;
+
+        color_curvature_attrib.col(j) << v_color_curvature[v].x,
+                v_color_curvature[v].y,
+                v_color_curvature[v].z;
+
+        color_gaussian_curv_attrib.col(j) << v_color_gaussian_curv[v].x,
+                v_color_gaussian_curv[v].y,
+                v_color_gaussian_curv[v].z;
+
+        normals_attrib.col(j) << vertex_normal[v].x,
+                vertex_normal[v].y,
+                vertex_normal[v].z;
+
+        ++j;
+    }
+
+    mShader.bind();
+    mShader.uploadIndices(indices);
+    mShader.uploadAttrib("position", mesh_points);
+    mShader.uploadAttrib("valence_color", color_valence_attrib);
+    mShader.uploadAttrib("unicurvature_color", color_unicurvature_attrib);
+    mShader.uploadAttrib("curvature_color", color_curvature_attrib);
+    mShader.uploadAttrib("gaussian_curv_color", color_gaussian_curv_attrib);
+    mShader.uploadAttrib("normal", normals_attrib);
+    mShader.setUniform("color_mode", int(color_mode));
+    mShader.setUniform("intensity", base_color);
+
+    mShaderNormals.bind();
+    mShaderNormals.uploadIndices(indices);
+    mShaderNormals.uploadAttrib("position", mesh_points);
+    mShaderNormals.uploadAttrib("normal", normals_attrib);
 }
