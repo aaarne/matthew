@@ -1,4 +1,3 @@
-R"(
 #version 330
 uniform int color_mode;
 uniform vec3 intensity;
@@ -34,4 +33,3 @@ void main() {
     }
     color = vec4(c, 1.0);
 }
-)"

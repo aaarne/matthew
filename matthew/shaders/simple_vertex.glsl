@@ -1,4 +1,3 @@
-R"(
 #version 330
 uniform mat4 MV;
 uniform mat4 P;
@@ -35,4 +34,3 @@ void main() {
     light_dir = vec3(0.0, 3.0, 3.0) - vpoint_mv.xyz;
     view_dir = -vpoint_mv.xyz;
 }
-)"

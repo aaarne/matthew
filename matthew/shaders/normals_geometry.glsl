@@ -1,4 +1,3 @@
-R"(
 #version 330
 layout (triangles) in;
 layout (line_strip, max_vertices = 6) out;
@@ -23,4 +22,3 @@ void main() {
    createline(1);
    createline(2);
 }
-)"

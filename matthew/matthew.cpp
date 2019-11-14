@@ -1,6 +1,10 @@
 #include "matthew.h"
 #include <surface_mesh/Surface_mesh.h>
-#include "shaders/shaders.h"
+#include "simple_fragment.h"
+#include "simple_vertex.h"
+#include "normals_fragment.h"
+#include "normals_geometry.h"
+#include "normals_vertex.h"
 
 using std::cout;
 using std::cerr;
@@ -35,9 +39,9 @@ void Matthew::run(std::string mesh_file) {
 void Matthew::initShaders() {
     // Shaders
     using namespace matthew;
-    mShader.init("a_simple_shader", simple_vertex_source, simple_fragment_source);
+    mShader.init("a_simple_shader", simple_vertex, simple_fragment);
 
-    mShaderNormals.init("normal_shader", normals_vertex_source, normals_fragment_source, normals_geometry_source);
+    mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
 }
 
 void Matthew::color_coding(Surface_mesh::Vertex_property <Scalar> prop, Surface_mesh *mesh,

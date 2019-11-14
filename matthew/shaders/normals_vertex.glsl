@@ -1,4 +1,3 @@
-R"(
 #version 330
 in vec3 position;
 in vec3 normal;
@@ -13,4 +12,3 @@ void main() {
     vs_out.normal = normal;
     vs_out.normal_mat = mat3(transpose(inverse(MV)));
 }
-)"
