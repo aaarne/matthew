@@ -6,7 +6,7 @@ file(GLOB shaders "shaders/*.glsl")
 set(SHADER_HEADER_NAME ${CMAKE_BINARY_DIR}/shaders_gen.h)
 add_custom_command(
         OUTPUT ${SHADER_HEADER_NAME}
-        COMMAND shader2header ${SHADER_HEADER_NAME} shaders
+        COMMAND shader2header ${SHADER_HEADER_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/shaders
         DEPENDS ${shaders};${CMAKE_SOURCE_DIR}/externals/shader2header/shader2header.cpp
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 

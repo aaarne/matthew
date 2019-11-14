@@ -1,4 +1,5 @@
 #version 330
+
 uniform int color_mode;
 uniform vec3 intensity;
 uniform vec3 light_color;

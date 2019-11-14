@@ -1,12 +1,16 @@
 #version 330
+
 layout (triangles) in;
 layout (line_strip, max_vertices = 6) out;
+
 uniform mat4 MV;
 uniform mat4 P;
+
 in VS_OUT {
     mat3 normal_mat;
     vec3 normal;
 } gs_in[];
+
 void createline(int index) {
     gl_Position = P * MV * gl_in[index].gl_Position;
     EmitVertex();
@@ -17,6 +21,7 @@ void createline(int index) {
     EmitVertex();
     EndPrimitive();
 }
+
 void main() {
     createline(0);
     createline(1);

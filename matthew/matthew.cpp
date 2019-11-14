@@ -1,10 +1,6 @@
 #include "matthew.h"
 #include <surface_mesh/Surface_mesh.h>
-#include "simple_fragment.h"
-#include "simple_vertex.h"
-#include "normals_fragment.h"
-#include "normals_geometry.h"
-#include "normals_vertex.h"
+#include "shaders_gen.h"
 
 using std::cout;
 using std::cerr;
@@ -19,6 +15,9 @@ using namespace Eigen;
 
 typedef surface_mesh::Surface_mesh Mesh;
 
+/**
+ *
+ */
 Matthew::Matthew() :
         nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew"),
         base_color(0, 0.6, 0.15),
@@ -37,10 +36,8 @@ void Matthew::run(std::string mesh_file) {
 }
 
 void Matthew::initShaders() {
-    // Shaders
-    using namespace matthew;
+    using namespace shaders;
     mShader.init("mesh_shader", simple_vertex, simple_fragment);
-
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
 }
 
