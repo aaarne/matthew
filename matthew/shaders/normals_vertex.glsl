@@ -8,7 +8,7 @@ out VS_OUT {
     vec3 normal;
 } vs_out;
 void main() {
-  gl_Position = vec4(position, 1.0);
+    gl_Position = vec4(position, 1.0);
     vs_out.normal = normal;
     vs_out.normal_mat = mat3(transpose(inverse(MV)));
 }

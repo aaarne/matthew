@@ -39,7 +39,7 @@ void Matthew::run(std::string mesh_file) {
 void Matthew::initShaders() {
     // Shaders
     using namespace matthew;
-    mShader.init("a_simple_shader", simple_vertex, simple_fragment);
+    mShader.init("mesh_shader", simple_vertex, simple_fragment);
 
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
 }
@@ -257,7 +257,6 @@ void Matthew::initGUI() {
     window->setPosition(Vector2i(15, 15));
     window->setLayout(new GroupLayout());
 
-    PopupButton *popupBtn;
     Button *b;
 
     new Label(window, "Mesh Graph");
@@ -334,7 +333,6 @@ void Matthew::initGUI() {
     cp->setFixedSize({100, 20});
     cp->setCallback([this](const Color &c) {
         base_color << c.r(), c.g(), c.b();
-        cout << "New base color: " << base_color.transpose() << endl;
     });
 
     new Label(colorPopup, "Light Color:", "sans-bold");
@@ -342,7 +340,6 @@ void Matthew::initGUI() {
     cp->setFixedSize({100, 20});
     cp->setCallback([this](const Color &c) {
         light_color << c.r(), c.g(), c.b();
-        cout << "New light color: " << base_color.transpose() << endl;
     });
 
     new Label(colorPopup, "Edge Color:", "sans-bold");
@@ -350,7 +347,6 @@ void Matthew::initGUI() {
     cp->setFixedSize({100, 20});
     cp->setCallback([this](const Color &c) {
         edge_color << c.r(), c.g(), c.b();
-        cout << "New edge color: " << edge_color.transpose() << endl;
     });
 
     window = new Window(this, "Mesh Info");
@@ -453,6 +449,7 @@ void Matthew::meshProcess() {
         mesh_points.col(j) << mesh.position(v).x,
                 mesh.position(v).y,
                 mesh.position(v).z;
+
         color_valence_attrib.col(j) << v_color_valence[v].x,
                 v_color_valence[v].y,
                 v_color_valence[v].z;

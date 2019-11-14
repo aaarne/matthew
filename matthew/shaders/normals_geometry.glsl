@@ -8,17 +8,17 @@ in VS_OUT {
     vec3 normal;
 } gs_in[];
 void createline(int index) {
-   gl_Position = P * MV * gl_in[index].gl_Position;
-   EmitVertex();
-   vec4 normal_mv = vec4(normalize(gs_in[index].normal_mat *
-                                   gs_in[index].normal), 1.0f);
-   gl_Position = P * (MV * gl_in[index].gl_Position
-                      + normal_mv * 0.035f);
-   EmitVertex();
-   EndPrimitive();
+    gl_Position = P * MV * gl_in[index].gl_Position;
+    EmitVertex();
+    vec4 normal_mv = vec4(normalize(gs_in[index].normal_mat *
+    gs_in[index].normal), 1.0f);
+    gl_Position = P * (MV * gl_in[index].gl_Position
+    + normal_mv * 0.035f);
+    EmitVertex();
+    EndPrimitive();
 }
 void main() {
-   createline(0);
-   createline(1);
-   createline(2);
+    createline(0);
+    createline(1);
+    createline(2);
 }

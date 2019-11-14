@@ -12,22 +12,23 @@ out vec4 color;
 
 void main() {
     vec3 c = vec3(0.0);
-    if (color_mode == 0) {
+    if (color_mode == 10) {
+        c = fcolor;
+    } else {
         c += vec3(1.0)*vec3(0.1, 0.1, 0.1);
         vec3 n = normalize(fnormal);
         vec3 v = normalize(view_dir);
         vec3 l = normalize(light_dir);
-        float lambert = dot(n,l);
-        if(lambert > 0.0) {
+        float lambert = dot(n, l);
+        if (lambert > 0.0) {
             c += vec3(1.0)*light_color*lambert;
             vec3 v = normalize(view_dir);
-            vec3 r = reflect(-l,n);
-            c += vec3(1.0)*vec3(0.8, 0.8, 0.8)*pow(max(dot(r,v), 0.0), 90.0);
+            vec3 r = reflect(-l, n);
+            c += vec3(1.0)*vec3(0.8, 0.8, 0.8)*pow(max(dot(r, v), 0.0), 90.0);
         }
         c *= fcolor;
-    } else {
-       c = fcolor;
     }
+
     if (intensity == vec3(0.0)) {
         c = intensity;
     }
