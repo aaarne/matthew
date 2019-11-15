@@ -57,11 +57,15 @@ protected:
     Eigen::Vector3f base_color;
 
     enum COLOR_MODE : int {
-        NORMAL = 0, VALENCE = 1, CURVATURE = 2, PLAIN = 10
+        SEXY = 0, VALENCE = 1, CURVATURE = 2, PLAIN = 10
     };
 
     enum CURVATURE_TYPE : int {
         UNIMEAN = 2, LAPLACEBELTRAMI = 3, GAUSS = 4
+    };
+
+    enum LIGHT_MODEL : int {
+        NO_LIGHT = 0, LAMBERT = 1, PHONG = 2
     };
 
     struct CameraParameters {
@@ -76,7 +80,7 @@ protected:
         float modelZoom = 1.0f;
     };
 
-    COLOR_MODE color_mode = NORMAL;
+    COLOR_MODE color_mode = SEXY;
     CURVATURE_TYPE curvature_type = GAUSS;
     Eigen::Vector3f edge_color;
     std::string filename;

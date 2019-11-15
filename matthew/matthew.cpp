@@ -26,7 +26,7 @@ void Matthew::run(std::string mesh_file) {
 
 void Matthew::initShaders() {
     using namespace shaders;
-    mShader.init("mesh_shader", simple_vertex, simple_fragment);
+    mShader.init("mesh_shader", simple_vertex, fragment_light);
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
 }
 
@@ -161,6 +161,21 @@ void Matthew::drawContents() {
         mShaderNormals.setUniform("P", p);
         mShaderNormals.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
     }
+
+    LIGHT_MODEL light_model;
+    switch (this->color_mode) {
+        case SEXY:
+            light_model = PHONG;
+            break;
+        case VALENCE:
+        case CURVATURE:
+            light_model = LAMBERT;
+            break;
+        case PLAIN:
+        default:
+            light_model = NO_LIGHT;
+    }
+    mShader.setUniform("light_model", int(light_model));
 }
 
 bool Matthew::scrollEvent(const Vector2i &p, const Vector2f &rel) {
@@ -272,7 +287,7 @@ void Matthew::initGUI() {
     b->setPushed(true);
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
-        this->color_mode = NORMAL;
+        this->color_mode = SEXY;
         this->wireframeBtn->setPushed(false);
         this->wireframe = false;
     });
@@ -466,6 +481,7 @@ void Matthew::meshProcess() {
     mShader.uploadAttrib("normal", normals_attrib);
     mShader.setUniform("color_mode", int(color_mode));
     mShader.setUniform("intensity", base_color);
+
 
     mShaderNormals.bind();
     mShaderNormals.uploadIndices(indices);
