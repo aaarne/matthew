@@ -56,20 +56,20 @@ namespace shaders {
         if (has_ending(file, ".glsl")) {
             string shader_name = file.substr(file.find_last_of("/\\") + 1);
             shader_name = shader_name.substr(0, shader_name.length() - 5);
-            out << "    /**" << endl;
-            out << "     * Shader: " << shader_name << endl;
-            out << "     * Filename: " << file << endl;
-            out << "     */" << endl;
-            out << "    const std::string " << shader_name << " = " << endl;
+            out << "/**" << endl;
+            out << " * Shader: " << shader_name << endl;
+            out << " * Filename: " << file << endl;
+            out << " */" << endl;
+            out << "const std::string " << shader_name << " = R\"(" << endl;
 
             string line;
             ifstream in(file);
 
             while (getline(in, line)) {
-                out << "        \"" << line << "\\n\"" << endl;
+                out << line << endl;
             }
 
-            out << "    ;" << endl << endl;
+            out << ")\";" << endl << endl;
 
             in.close();
         }
