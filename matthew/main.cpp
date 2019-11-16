@@ -1,4 +1,4 @@
-#include "mesh_processing.h"
+#include "meshiew.h"
 
 using namespace std;
 
@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
 
     nanogui::init();
 
-    nanogui::ref<Matthew> app = new MatthewImpl();
+    nanogui::ref<Matthew> app = new Meshiew();
     app->run(filename);
     app->drawAll();
     app->setVisible(true);

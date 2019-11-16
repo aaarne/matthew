@@ -20,7 +20,7 @@
 class Matthew : public nanogui::Screen {
 public:
     explicit Matthew();
-    virtual ~Matthew();
+    virtual ~Matthew() = default;
 
     void run(std::string mesh_file);
 
@@ -30,43 +30,16 @@ protected:
     typedef surface_mesh::Scalar Scalar;
     typedef surface_mesh::Point Point;
 
-    virtual void loadMesh(std::string filename) = 0;
+    virtual void load(std::string filename) = 0;
 
-    void meshProcess();
-    void initShaders();
     void initGUI();
 
-    virtual void computeValence() = 0;
+    virtual void initShaders() = 0;
 
-    virtual void calc_uniform_laplacian() = 0;
+    virtual void create_gui_elements() = 0;
 
-    virtual void calc_mean_curvature() = 0;
-
-    virtual void calc_gauss_curvature() = 0;
-
-    virtual void calc_weights() = 0;
-
-    void color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_mesh *mesh,
-                      Surface_mesh::Vertex_property<surface_mesh::Color> color_prop, int bound = 20);
-
-    static void set_color(Surface_mesh::Vertex v, const surface_mesh::Color &col,
-                          Surface_mesh::Vertex_property<surface_mesh::Color> color_prop);
-
-    surface_mesh::Color value_to_color(Scalar value, Scalar min_value, Scalar max_value);
-
-    Eigen::Vector3f base_color;
-
-    enum COLOR_MODE : int {
-        SEXY = 0, VALENCE = 1, CURVATURE = 2, PLAIN = 10
-    };
-
-    enum CURVATURE_TYPE : int {
-        UNIMEAN = 2, LAPLACEBELTRAMI = 3, GAUSS = 4
-    };
-
-    enum LIGHT_MODEL : int {
-        NO_LIGHT = 0, LAMBERT = 1, PHONG = 2
-    };
+    virtual Point get_model_center() = 0;
+    virtual float get_model_dist_max() = 0;
 
     struct CameraParameters {
         nanogui::Arcball arcball;
@@ -80,55 +53,31 @@ protected:
         float modelZoom = 1.0f;
     };
 
-    COLOR_MODE color_mode = SEXY;
-    CURVATURE_TYPE curvature_type = GAUSS;
-    Eigen::Vector3f edge_color;
+    void computeCameraMatrices(Eigen::Matrix4f &model,
+                               Eigen::Matrix4f &view,
+                               Eigen::Matrix4f &proj);
+
     std::string filename;
-    Eigen::Vector3f light_color;
     CameraParameters mCamera;
-    nanogui::GLShader mShader;
-    nanogui::GLShader mShaderNormals;
-    Surface_mesh mesh;
-    Point mesh_center = Point(0.0f, 0.0f, 0.0f);
-    bool normals = false;
-    nanogui::PopupButton *popupCurvature;
-    Surface_mesh::Vertex_property<surface_mesh::Color> v_color_curvature;
-    Surface_mesh::Vertex_property<surface_mesh::Color> v_color_gaussian_curv;
-    Surface_mesh::Vertex_property<surface_mesh::Color> v_color_unicurvature;
-    Surface_mesh::Vertex_property<surface_mesh::Color> v_color_valence;
-    nanogui::Window *window;
-    // Boolean for the viewer
-    bool wireframe = false;
-    nanogui::Button *wireframeBtn;
-
 private:
-    bool keyboardEvent(int key, int scancode, int action, int modifiers);
+    Point model_center;
+    bool keyboardEvent(int key, int scancode, int action, int modifiers) override;
 
-    void draw(NVGcontext *ctx);
+    void draw(NVGcontext *ctx) override;
 
     Eigen::Vector2f getScreenCoord();
 
     void repaint();
 
-    void drawContents();
-
-    bool scrollEvent(const Eigen::Vector2i &p, const Eigen::Vector2f &rel);
+    bool scrollEvent(const Eigen::Vector2i &p, const Eigen::Vector2f &rel) override;
 
     bool mouseMotionEvent(const Eigen::Vector2i &p, const Eigen::Vector2i &rel,
-                          int button, int modifiers);
+                          int button, int modifiers) override;
 
-    bool mouseButtonEvent(const Eigen::Vector2i &p, int button, bool down, int modifiers);
-
+    bool mouseButtonEvent(const Eigen::Vector2i &p, int button, bool down, int modifiers) override;
 
     bool mTranslate = false;
-    bool mDrag = false;
     Eigen::Vector2i mTranslateStart = Eigen::Vector2i(0, 0);
-
-    void computeCameraMatrices(Eigen::Matrix4f &model,
-                               Eigen::Matrix4f &view,
-                               Eigen::Matrix4f &proj);
-
-    nanogui::Arcball arcball;
 
 };
 
