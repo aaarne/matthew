@@ -20,12 +20,12 @@ vec3 diffuse(vec3 N, vec3 L)
 }
 
 vec3 ambient() {
-    return 0.3 * fcolor;
+    return 0.1 * fcolor;
 }
 
 vec3 specular(vec3 N, vec3 V, vec3 L) {
     vec3 R = reflect(-L, N);
-    float spec = pow(max(dot(V, R), 0.0), 32);
+    float spec = pow(max(dot(V, R), 0.0), 8);
     return .5*spec*light_color;
 }
 

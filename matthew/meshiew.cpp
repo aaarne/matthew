@@ -382,7 +382,6 @@ void Meshiew::calc_gauss_curvature() {
 
 void Meshiew::initShaders() {
     using namespace shaders;
-    cout << "Init shaders" << endl;
     mShader.init("mesh_shader", simple_vertex, fragment_light);
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
 }
@@ -392,14 +391,6 @@ void Meshiew::load(string filename) {
         std::cerr << "Mesh not found, exiting." << std::endl;
         exit(-1);
     }
-
-    cout << "Mesh " << filename << " loaded." << endl;
-    n_vertices = mesh.n_vertices();
-    cout << "# of vertices : " << n_vertices << endl;
-    n_faces = mesh.n_faces();
-    cout << "# of faces : " << n_faces << endl;
-    n_edges = mesh.n_edges();
-    cout << "# of edges : " << n_edges << endl;
 
     mesh_center = computeCenter(&mesh);
     dist_max = 0.0f;
