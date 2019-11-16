@@ -92,12 +92,15 @@ void Meshiew::drawContents() {
 
     LIGHT_MODEL light_model;
     switch (this->color_mode) {
-        case SEXY:
+        case NORMAL:
             light_model = PHONG;
             break;
         case VALENCE:
         case CURVATURE:
             light_model = LAMBERT;
+            break;
+        case SEXY:
+            light_model = SHINY;
             break;
         case PLAIN:
         default:
@@ -445,14 +448,23 @@ void Meshiew::create_gui_elements() {
         this->wireframe = true;
     });
 
-    b = new Button(window, "Sexy");
+    b = new Button(window, "Normal");
     b->setPushed(true);
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->color_mode = NORMAL;
+        this->wireframeBtn->setPushed(false);
+        this->wireframe = false;
+    });
+
+    b = new Button(window, "Sexy");
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = SEXY;
         this->wireframeBtn->setPushed(false);
         this->wireframe = false;
     });
+
     b = new Button(window, "Valence");
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {

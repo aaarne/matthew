@@ -11,10 +11,13 @@
 class Meshiew : public Matthew {
 public:
     explicit Meshiew();
+
     virtual ~Meshiew();
+
 protected:
     void meshProcess();
-    void calc_weights() ;
+
+    void calc_weights();
 
     void calc_edges_weights();
 
@@ -30,26 +33,28 @@ protected:
 
     void create_gui_elements();
 
-    void drawContents() override ;
+    void drawContents() override;
 
     static Point computeCenter(Surface_mesh *mesh);
 
     void load(std::string filename);
 
     void initShaders() override;
+
     Point get_model_center() override;
+
     float get_model_dist_max() override;
 
-    void color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_mesh *mesh,
-                      Surface_mesh::Vertex_property<surface_mesh::Color> color_prop, int bound = 20);
+    void color_coding(Surface_mesh::Vertex_property <Scalar> prop, Surface_mesh *mesh,
+                      Surface_mesh::Vertex_property <surface_mesh::Color> color_prop, int bound = 20);
 
     static void set_color(Surface_mesh::Vertex v, const surface_mesh::Color &col,
-                          Surface_mesh::Vertex_property<surface_mesh::Color> color_prop);
+                          Surface_mesh::Vertex_property <surface_mesh::Color> color_prop);
 
     surface_mesh::Color value_to_color(Scalar value, Scalar min_value, Scalar max_value);
 
     enum COLOR_MODE : int {
-        SEXY = 0, VALENCE = 1, CURVATURE = 2, PLAIN = 10
+        NORMAL = 0, VALENCE = 1, CURVATURE = 2, PLAIN = 10, SEXY = 100
     };
 
     enum CURVATURE_TYPE : int {
@@ -57,7 +62,7 @@ protected:
     };
 
     enum LIGHT_MODEL : int {
-        NO_LIGHT = 0, LAMBERT = 1, PHONG = 2
+        NO_LIGHT = 0, LAMBERT = 1, PHONG = 2, SHINY = 3
     };
 
     int n_faces = 0;
@@ -68,7 +73,7 @@ protected:
     float dist_max;
 
     Eigen::Vector3f base_color;
-    COLOR_MODE color_mode = SEXY;
+    COLOR_MODE color_mode = NORMAL;
     CURVATURE_TYPE curvature_type = GAUSS;
     Eigen::Vector3f edge_color;
     Eigen::Vector3f light_color;
@@ -77,10 +82,10 @@ protected:
     Surface_mesh mesh;
     bool normals = false;
     nanogui::PopupButton *popupCurvature;
-    Surface_mesh::Vertex_property<surface_mesh::Color> v_color_curvature;
-    Surface_mesh::Vertex_property<surface_mesh::Color> v_color_gaussian_curv;
-    Surface_mesh::Vertex_property<surface_mesh::Color> v_color_unicurvature;
-    Surface_mesh::Vertex_property<surface_mesh::Color> v_color_valence;
+    Surface_mesh::Vertex_property <surface_mesh::Color> v_color_curvature;
+    Surface_mesh::Vertex_property <surface_mesh::Color> v_color_gaussian_curv;
+    Surface_mesh::Vertex_property <surface_mesh::Color> v_color_unicurvature;
+    Surface_mesh::Vertex_property <surface_mesh::Color> v_color_valence;
     nanogui::Window *window;
     bool wireframe = false;
     nanogui::Button *wireframeBtn;
