@@ -18,7 +18,7 @@ vector<string> files_in_directory(const string& dir) {
   shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
   struct dirent *dirent_ptr;
   if (!directory_ptr) {
-    cerr << "Error opening : " << strerror(errno) << " " << dir << endl;
+    cerr << "Error opening " << dir << ": " << strerror(errno) << " " << dir << endl;
     return files;
   }
 
