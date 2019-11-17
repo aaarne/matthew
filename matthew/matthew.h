@@ -10,6 +10,7 @@
 #include <nanogui/button.h>
 #include <nanogui/textbox.h>
 #include <nanogui/tabwidget.h>
+#include <nanogui/slider.h>
 #include <surface_mesh/Surface_mesh.h>
 
 

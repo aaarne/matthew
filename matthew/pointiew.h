@@ -10,7 +10,7 @@
 
 class Pointiew : public Matthew {
 public:
-    explicit Pointiew() = default;
+    explicit Pointiew();
 
 protected:
 
@@ -27,7 +27,11 @@ protected:
     float get_model_dist_max() override;
 
 private:
+    float point_size;
+    bool has_color;
     long n;
+    Eigen::MatrixXf colors;
+    Eigen::Vector3f color;
     Eigen::MatrixXf points;
 
     nanogui::GLShader pcdShader;

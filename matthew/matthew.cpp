@@ -23,7 +23,6 @@ void Matthew::run(std::string mesh_file) {
     cout << "model center: " << model_center << endl;
     cout << "dist max: " << get_model_dist_max();
     mCamera.modelTranslation = -Vector3f(model_center.x, model_center.y, model_center.z);
-
 }
 
 bool Matthew::keyboardEvent(int key, int scancode, int action, int modifiers) {
