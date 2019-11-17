@@ -40,7 +40,7 @@ void Pointiew::load(std::string filename) {
 
 void Pointiew::initShaders() {
     using namespace shaders;
-    pcdShader.init("pcd", simple_vertex, fragment_light);
+    pcdShader.init("pcd", point_cloud_verts, point_cloud_frag);
 }
 
 void Pointiew::create_gui_elements() {
@@ -64,6 +64,7 @@ void Pointiew::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
     pcdShader.setUniform("P", p);
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
+    glPointSize(2.0);
     pcdShader.drawArray(GL_POINTS, 0, n);
 }
 
