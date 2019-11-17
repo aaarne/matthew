@@ -403,31 +403,27 @@ Point Meshiew::computeCenter(Surface_mesh *mesh) {
     return center / mesh->n_vertices();
 }
 
-void Meshiew::create_gui_elements() {
+void Meshiew::create_gui_elements(nanogui::Window *control) {
     using namespace nanogui;
-    window = new Window(this, "Display Control");
-    window->setPosition(Vector2i(15, 15));
-    window->setLayout(new GroupLayout());
-
     Button *b;
 
-    new Label(window, "Mesh Graph");
-    b = new Button(window, "Wireframe");
+    new Label(control, "Mesh Graph");
+    b = new Button(control, "Wireframe");
     b->setFlags(Button::ToggleButton);
     b->setChangeCallback([this](bool wireframe) {
         this->wireframe = wireframe;
     });
     wireframeBtn = b;
 
-    new Label(window, "Normals");
-    b = new Button(window, "Normals");
+    new Label(control, "Normals");
+    b = new Button(control, "Normals");
     b->setFlags(Button::ToggleButton);
     b->setChangeCallback([this](bool normals) {
         this->normals = !this->normals;
     });
 
-    new Label(window, "Color Mode");
-    b = new Button(window, "Plain");
+    new Label(control, "Color Mode");
+    b = new Button(control, "Plain");
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = PLAIN;
@@ -435,7 +431,7 @@ void Meshiew::create_gui_elements() {
         this->wireframe = true;
     });
 
-    b = new Button(window, "Normal");
+    b = new Button(control, "Normal");
     b->setPushed(true);
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
@@ -444,7 +440,7 @@ void Meshiew::create_gui_elements() {
         this->wireframe = false;
     });
 
-    b = new Button(window, "Sexy");
+    b = new Button(control, "Sexy");
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = SEXY;
@@ -452,38 +448,18 @@ void Meshiew::create_gui_elements() {
         this->wireframe = false;
     });
 
-    b = new Button(window, "Valence");
+    b = new Button(control, "Valence");
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = VALENCE;
     });
-
-    popupCurvature = new PopupButton(window, "Curvature");
-    popupCurvature->setFlags(Button::RadioButton);
-    Popup *curvPopup = popupCurvature->popup();
-    popupCurvature->setCallback([this, curvPopup]() {
+    b = new Button(control, "Curvature");
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
         this->color_mode = CURVATURE;
     });
-    curvPopup->setLayout(new GroupLayout());
-    new Label(curvPopup, "Curvature Type", "sans-bold");
-    b = new Button(curvPopup, "Uniform Laplacian");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->curvature_type = UNIMEAN;
-    });
-    b = new Button(curvPopup, "Laplace-Beltrami");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->curvature_type = LAPLACEBELTRAMI;
-    });
-    b = new Button(curvPopup, "Gaussian");
-    b->setFlags(Button::RadioButton);
-    b->setPushed(true);
-    b->setCallback([this]() {
-        this->curvature_type = GAUSS;
-    });
 
-    PopupButton *colorPoputBtn = new PopupButton(window, "Colors");
+    auto colorPoputBtn = new PopupButton(control, "Colors");
     Popup *colorPopup = colorPoputBtn->popup();
     auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
     grid->setSpacing(0, 10);
@@ -510,8 +486,30 @@ void Meshiew::create_gui_elements() {
         edge_color << c.r(), c.g(), c.b();
     });
 
-    window = new Window(this, "Mesh Info");
-    window->setPosition(Vector2i(750, 15));
+    new Label(control, "Curvature Type");
+    popupCurvature = new PopupButton(control, "Curvature Type");
+    Popup *curvPopup = popupCurvature->popup();
+    curvPopup->setLayout(new GroupLayout());
+    new Label(curvPopup, "Curvature Type", "sans-bold");
+    b = new Button(curvPopup, "Uniform Laplacian");
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->curvature_type = UNIMEAN;
+    });
+    b = new Button(curvPopup, "Laplace-Beltrami");
+    b->setFlags(Button::RadioButton);
+    b->setCallback([this]() {
+        this->curvature_type = LAPLACEBELTRAMI;
+    });
+    b = new Button(curvPopup, "Gaussian");
+    b->setFlags(Button::RadioButton);
+    b->setPushed(true);
+    b->setCallback([this]() {
+        this->curvature_type = GAUSS;
+    });
+
+    Window *window = new Window(this, "Mesh Info");
+    window->setPosition(Vector2i(mFBSize(0)-250, 15));
     grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
     grid->setSpacing(0, 10);
     window->setLayout(grid);
@@ -547,7 +545,8 @@ void Meshiew::create_gui_elements() {
     check->setEnabled(false);
 }
 
-Meshiew::Meshiew() :
+Meshiew::Meshiew(bool fs) :
+        Matthew::Matthew(fs),
         base_color(0, 0.6, 0.15),
         light_color(1, 1, 1),
         edge_color(0, 0, 0) {

@@ -5,9 +5,8 @@
 using namespace std;
 using namespace Eigen;
 
-Matthew::Matthew() :
-        nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew") {
-
+Matthew::Matthew(bool fs) :
+        nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew", true, fs) {
 }
 
 void Matthew::run(std::string mesh_file) {
@@ -120,7 +119,17 @@ void Matthew::computeCameraMatrices(Eigen::Matrix4f &model, Eigen::Matrix4f &vie
 
 
 void Matthew::initGUI() {
-    create_gui_elements();
+    using namespace nanogui;
+    auto *window = new Window(this, "Display Control");
+    window->setPosition(Vector2i(15, 15));
+    window->setLayout(new GroupLayout());
+    new Label(window, "Background");
+    auto cp = new ColorPicker(window, this->background());
+    cp->setFixedSize({100, 20});
+    cp->setCallback([this](const Color &c) {
+        this->setBackground(c);
+    });
+    create_gui_elements(window);
     performLayout();
 }
 

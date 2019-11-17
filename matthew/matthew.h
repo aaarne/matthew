@@ -20,7 +20,7 @@
 
 class Matthew : public nanogui::Screen {
 public:
-    explicit Matthew();
+    explicit Matthew(bool fs);
     virtual ~Matthew() = default;
 
     void run(std::string mesh_file);
@@ -41,7 +41,7 @@ protected:
 
     virtual void initShaders() = 0;
 
-    virtual void create_gui_elements() = 0;
+    virtual void create_gui_elements(nanogui::Window *window) = 0;
 
     virtual Point get_model_center() = 0;
     virtual float get_model_dist_max() = 0;

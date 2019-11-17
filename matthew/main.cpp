@@ -14,6 +14,7 @@ bool has_ending(std::string const &fullString, std::string const &ending) {
 
 int main(int argc, char *argv[]) {
     std::string filename;
+    bool fullscreen = false;
     if (argc < 2) {
         vector<pair<string, string>> filetypes;
         filetypes.emplace_back("obj", "Wavefront OBJ");
@@ -23,6 +24,10 @@ int main(int argc, char *argv[]) {
         filename = nanogui::file_dialog(filetypes, false);
     } else {
         filename = argv[1];
+    }
+
+    if (argc > 2) {
+        fullscreen = true;
     }
 
     ifstream testfile(filename);
@@ -38,9 +43,9 @@ int main(int argc, char *argv[]) {
     nanogui::ref<Matthew> app;
 
     if (has_ending(filename, "pcd")) {
-        app = new Pointiew();
+        app = new Pointiew(fullscreen);
     } else if (has_ending(filename, "obj") || has_ending(filename, "off") || has_ending(filename, "stl")) {
-        app = new Meshiew();
+        app = new Meshiew(fullscreen);
     } else {
         cerr << "Unknown filetype" << endl;
         exit(1);

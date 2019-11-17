@@ -10,7 +10,7 @@
 
 class Meshiew : public Matthew {
 public:
-    explicit Meshiew();
+    explicit Meshiew(bool fs);
 
     virtual ~Meshiew();
 
@@ -31,7 +31,7 @@ protected:
 
     void calc_gauss_curvature();
 
-    void create_gui_elements();
+    void create_gui_elements(nanogui::Window *control) override;
 
     void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) override;
 

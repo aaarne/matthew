@@ -10,7 +10,7 @@
 
 class Pointiew : public Matthew {
 public:
-    explicit Pointiew();
+    explicit Pointiew(bool fs);
 
 protected:
 
@@ -20,7 +20,7 @@ protected:
 
     void initShaders() override;
 
-    void create_gui_elements() override;
+    void create_gui_elements(nanogui::Window*) override;
 
     Point get_model_center() override;
 

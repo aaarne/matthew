@@ -8,7 +8,9 @@
 
 using namespace std;
 
-Pointiew::Pointiew() : has_color(false), point_size(2.0), n(0), color(0.0, 0.0, 0.0) {}
+Pointiew::Pointiew(bool fs) : Matthew::Matthew(fs), has_color(false), point_size(2.0), n(0), color(1.0, 1.0, 1.0) {
+    setBackground(nanogui::Color(0.f, 0.f, 0.f, 0.f));
+}
 
 void Pointiew::load(std::string filename) {
     std::ifstream in(filename);
@@ -85,30 +87,27 @@ void Pointiew::initShaders() {
     pcdShader.init("pcd", point_cloud_verts, point_cloud_frag);
 }
 
-void Pointiew::create_gui_elements() {
+void Pointiew::create_gui_elements(nanogui::Window *control) {
     using namespace nanogui;
-    auto *window = new Window(this, "Display Control");
-    window->setPosition(Vector2i(15, 15));
-    window->setLayout(new GroupLayout());
 
-    new Label(window, "Base Color:", "sans-bold");
-    auto cp = new ColorPicker(window, color);
+    new Label(control, "Base Color:", "sans-bold");
+    auto cp = new ColorPicker(control, color);
     cp->setFixedSize({100, 20});
     cp->setCallback([this](const Color &c) {
         color << c.r(), c.g(), c.b();
     });
     cp->setEnabled(!has_color);
 
-    new Label(window, "Point Size");
-    auto *slider = new Slider(window);
+    new Label(control, "Point Size");
+    auto *slider = new Slider(control);
     slider->setValue(0.2);
     slider->setCallback([this](float value) {
         this->point_size = std::max(0.1f, 10.0f * value);
     });
 
-    window = new Window(this, "Point Cloud Info");
-    window->setPosition(Vector2i(750, 15));
-    GridLayout *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
+    Window *window = new Window(this, "Point Cloud Info");
+    window->setPosition(Vector2i(mFBSize(0)-250, 15));
+    auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
     grid->setSpacing(0, 10);
     window->setLayout(grid);
 
