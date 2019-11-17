@@ -20,6 +20,8 @@ void Matthew::run(std::string mesh_file) {
     mCamera.arcball.setSize(mSize);
     mCamera.modelZoom = 2 / get_model_dist_max();
     model_center = get_model_center();
+    cout << "model center: " << model_center << endl;
+    cout << "dist max: " << get_model_dist_max();
     mCamera.modelTranslation = -Vector3f(model_center.x, model_center.y, model_center.z);
 
 }
@@ -36,7 +38,6 @@ bool Matthew::keyboardEvent(int key, int scancode, int action, int modifiers) {
 }
 
 void Matthew::draw(NVGcontext *ctx) {
-    /* Draw the user interface */
     Screen::draw(ctx);
 }
 
@@ -122,5 +123,11 @@ void Matthew::computeCameraMatrices(Eigen::Matrix4f &model, Eigen::Matrix4f &vie
 void Matthew::initGUI() {
     create_gui_elements();
     performLayout();
+}
+
+void Matthew::drawContents() {
+    Eigen::Matrix4f model, view, projection;
+    computeCameraMatrices(model, view, projection);
+    draw(view * model, projection);
 }
 

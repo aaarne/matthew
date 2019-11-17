@@ -32,6 +32,10 @@ protected:
 
     virtual void load(std::string filename) = 0;
 
+    void drawContents() final;
+
+    virtual void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) = 0;
+
     void initGUI();
 
     virtual void initShaders() = 0;
@@ -41,6 +45,9 @@ protected:
     virtual Point get_model_center() = 0;
     virtual float get_model_dist_max() = 0;
 
+    std::string filename;
+
+private:
     struct CameraParameters {
         nanogui::Arcball arcball;
         float zoom = 1.0f, viewAngle = 45.0f;
@@ -53,13 +60,11 @@ protected:
         float modelZoom = 1.0f;
     };
 
+    CameraParameters mCamera;
     void computeCameraMatrices(Eigen::Matrix4f &model,
                                Eigen::Matrix4f &view,
                                Eigen::Matrix4f &proj);
 
-    std::string filename;
-    CameraParameters mCamera;
-private:
     Point model_center;
     bool keyboardEvent(int key, int scancode, int action, int modifiers) override;
 

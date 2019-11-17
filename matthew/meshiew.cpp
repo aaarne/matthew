@@ -38,27 +38,15 @@ void Meshiew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_m
     }
 }
 
-void Meshiew::drawContents() {
+void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     using namespace nanogui;
-
-    /* Draw the window contents using OpenGL */
     mShader.bind();
-
-    Eigen::Matrix4f model, view, proj;
-    computeCameraMatrices(model, view, proj);
-
-    Matrix4f mv = view * model;
-    Matrix4f p = proj;
-
-    /* MVP uniforms */
     mShader.setUniform("MV", mv);
     mShader.setUniform("P", p);
 
-    /* Setup OpenGL (making sure the GUI doesn't disable these */
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
-    /* Render everything */
     if (wireframe) {
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(1.0, 1.0);
@@ -73,7 +61,6 @@ void Meshiew::drawContents() {
         mShader.setUniform("color_mode", int(color_mode));
     }
     mShader.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
-//    mShader.drawArray(GL_POINTS, 0, mesh.n_faces());
 
     if (wireframe) {
         glDisable(GL_POLYGON_OFFSET_FILL);

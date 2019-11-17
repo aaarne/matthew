@@ -33,7 +33,7 @@ protected:
 
     void create_gui_elements();
 
-    void drawContents() override;
+    void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) override;
 
     static Point computeCenter(Surface_mesh *mesh);
 
