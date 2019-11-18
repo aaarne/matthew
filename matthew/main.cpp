@@ -5,21 +5,16 @@
 
 using namespace std;
 
-bool has_ending(std::string const &fullString, std::string const &ending) {
-    if (fullString.length() >= ending.length()) {
-        return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
-    } else {
-        return false;
-    }
-}
 
 int main(int argc, char **argv) {
     CLI::App cli{"Matthew"};
-    std::string filename;
-    bool fullscreen = false;
 
-    cli.add_option("file,-f,--file", filename, "The mesh/pointcloud to display");
+    std::string filename;
+    cli.add_option("file,-f,--file", filename, "The mesh/pointcloud to display")->check(CLI::ExistingFile);
+    bool fullscreen = false;
     cli.add_flag("--fullscreen,--fs", fullscreen, "Open in fullscreen mode");
+    std::vector<float> background_color = {0, 0, 0};
+    cli.add_option("--background", background_color, "Background Color (RGB 0..1)")->expected(3);
 
     CLI11_PARSE(cli, argc, argv);
 
@@ -32,28 +27,12 @@ int main(int argc, char **argv) {
         filename = nanogui::file_dialog(filetypes, false);
     }
 
-    ifstream testfile(filename);
-
-    if (!testfile) {
-        cerr << "File " << filename << " not present." << endl;
-        exit(2);
-    } else {
-        testfile.close();
-    }
+    Eigen::Vector3f bgcol(background_color[0], background_color[1], background_color[2]);
 
     nanogui::init();
-    nanogui::ref<Matthew> app;
-
-    if (has_ending(filename, "pcd")) {
-        app = new Pointiew(fullscreen);
-    } else if (has_ending(filename, "obj") || has_ending(filename, "off") || has_ending(filename, "stl")) {
-        app = new Meshiew(fullscreen);
-    } else {
-        cerr << "Unknown filetype" << endl;
-        exit(1);
-    }
-
-    app->run(filename);
+    nanogui::ref<Matthew> app = Matthew::create_matthew(filename, fullscreen);
+    app->setBackground(bgcol);
+    app->run();
     app->drawAll();
     app->setVisible(true);
     nanogui::mainloop();

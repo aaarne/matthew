@@ -6,6 +6,8 @@
 #include <nanogui/colorpicker.h>
 #include <nanogui/label.h>
 #include "shaders_gen.h"
+#include "meshiew.h"
+#include "pointiew.h"
 
 using namespace std;
 using namespace Eigen;
@@ -14,8 +16,31 @@ Matthew::Matthew(bool fs) :
         nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew", true, fs) {
 }
 
+bool has_ending(std::string const &fullString, std::string const &ending) {
+    if (fullString.length() >= ending.length()) {
+        return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
+    } else {
+        return false;
+    }
+}
+
+Matthew *Matthew::create_matthew(std::string filename, bool fullscreen) {
+    Matthew *matthew;
+    if (has_ending(filename, "pcd")) {
+        matthew = new Pointiew(fullscreen);
+    } else if (has_ending(filename, "obj") || has_ending(filename, "off") || has_ending(filename, "stl")) {
+        matthew = new Meshiew(fullscreen);
+    } else {
+        throw std::invalid_argument("Unknown filetype");
+    }
+    matthew->filename = filename;
+    return matthew;
+}
+
 void Matthew::run(std::string mesh_file) {
-    this->filename = mesh_file;
+    if (mesh_file != "") {
+        this->filename = mesh_file;
+    }
     initShaders();
     load(filename);
     initGUI();

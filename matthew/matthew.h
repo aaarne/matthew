@@ -1,18 +1,20 @@
 #include <surface_mesh/Surface_mesh.h>
 #include <nanogui/screen.h>
 #include <nanogui/glutil.h>
+#include <memory>
 
 
 #ifndef MATTHEW_H
 #define MATTHEW_H
-
 
 class Matthew : public nanogui::Screen {
 public:
     explicit Matthew(bool fs);
     virtual ~Matthew() = default;
 
-    void run(std::string mesh_file);
+    void run(std::string mesh_file = "");
+
+    static Matthew *create_matthew(std::string filename, bool fullscreen=false);
 
 protected:
 
