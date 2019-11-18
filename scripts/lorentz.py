@@ -65,5 +65,10 @@ if __name__ == "__main__":
         print(f"Point cloud written to {pcdfile}.")
 
     import subprocess
-    subprocess.run(['../build/matthew/matthew', '--file', pcdfile, '--background', "0", "0", "0"])
+    from os.path import dirname, realpath, join
+    subprocess.run([
+        f'{join(dirname(realpath(__file__)), "../build/matthew/matthew")}',
+        '--file', pcdfile, 
+        '--background', "0", "0", "0", 
+        '--fullscreen'])
 
