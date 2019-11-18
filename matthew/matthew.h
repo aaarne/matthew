@@ -50,6 +50,9 @@ private:
         float modelZoom = 1.0f;
     };
 
+    bool demo_mode = false;
+
+    std::vector<nanogui::Window*> windows;
     CameraParameters mCamera;
     void computeCameraMatrices(Eigen::Matrix4f &model,
                                Eigen::Matrix4f &view,

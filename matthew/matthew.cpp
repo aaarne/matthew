@@ -15,7 +15,7 @@ using namespace std;
 using namespace Eigen;
 
 Matthew::Matthew(bool fs) :
-        nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew", true, fs) {
+        nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew", true, fs), demo_mode(fs) {
 }
 
 bool has_ending(std::string const &fullString, std::string const &ending) {
@@ -60,6 +60,11 @@ bool Matthew::keyboardEvent(int key, int scancode, int action, int modifiers) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         setVisible(false);
         return true;
+    }
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+        for (const auto &w : windows) {
+            w->setVisible(true);
+        }
     }
     return false;
 }
@@ -165,6 +170,15 @@ void Matthew::initGUI() {
     new Label(info, filename, "sans");
     create_gui_elements(window, info);
 
+    new Label(window, "Hide Windows");
+    Button *b = new Button(window, "Hide");
+    b->setCallback([this]() {
+        cout << "Press space to reshow." << endl;
+        for (const auto &w : this->windows) {
+            w->setVisible(false);
+        }
+    });
+
     auto vec2widget = [info](const std::string &title, const Eigen::Vector3f &v) {
         new Label(info, title);
         auto *widget = new Widget(info);
@@ -182,6 +196,10 @@ void Matthew::initGUI() {
 
     vec2widget("Center", model_center);
     vec2widget("Dimensions", this->get_model_dimensions());
+    this->windows.push_back(window);
+    this->windows.push_back(info);
+
+    if (demo_mode) for (const auto &w : windows) w->setVisible(false);
 
     performLayout();
 }

@@ -33,7 +33,7 @@ private:
     float point_size;
     bool has_color;
     long n;
-    bool draw_grid = true;
+    bool draw_grid = false;
     float grid_intensity = 0.3;
     Eigen::MatrixXf colors;
     Eigen::Vector3f color;

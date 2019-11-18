@@ -115,7 +115,7 @@ void Pointiew::create_gui_elements(nanogui::Window *control, nanogui::Window *in
 
     new Label(control, "Grid");
     auto chkbox = new CheckBox(control, "Show Grid");
-    chkbox->setChecked(true);
+    chkbox->setChecked(draw_grid);
     chkbox->setCallback([this](bool value) {
         this->draw_grid = value;
     });
