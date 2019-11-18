@@ -14,8 +14,17 @@ I can read:
 
 ![Screenshot](doc/scrsht.png)
 
-## Matthew for point cloud data on a Lorentz attractor trajectory
+## Matthew for point cloud data 
+
+### Matthew showing a Lorentz attractor trajectory
 
 The data was generated using [this](scripts/lorentz.py) script.
 
 ![Point Cloud](doc/pcd.png)
+
+### Matthew showing something strange
+
+The data was generated from the [Hénon map](https://en.wikipedia.org/wiki/H%C3%A9non_map) varying the parameter b 
+and keeping a=1.4 constant. It was generated in [this](scripts/discrete_chaos.py) script.
+
+![Point Cloud Hénon](doc/discrete_chaos.png)

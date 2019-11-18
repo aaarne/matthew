@@ -1,6 +1,3 @@
-file(GLOB_RECURSE SOURCES "*.cpp")
-file(GLOB_RECURSE HEADERS "*.h")
-
 file(GLOB shaders "../shaders/*.glsl")
 
 set(SHADER_HEADER_NAME ${CMAKE_BINARY_DIR}/shaders_gen.h)
@@ -10,9 +7,12 @@ add_custom_command(
         DEPENDS ${shaders};${CMAKE_CURRENT_SOURCE_DIR}/../externals/shader2header/shader2header.cpp
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR}) # For generated shader header
 
-add_executable(matthew ${SOURCES} ${HEADERS} ${SHADER_HEADER_NAME})
-target_link_libraries(matthew surface_mesh)
-target_link_libraries(matthew nanogui ${NANOGUI_EXTRA_LIBS})
+add_executable(matthew main.cpp)
+add_library(matthewlib grid.cpp matthew.cpp meshiew.cpp pointiew.cpp ${SHADER_HEADER_NAME})
+target_include_directories(matthewlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(matthewlib surface_mesh)
+target_link_libraries(matthewlib nanogui ${NANOGUI_EXTRA_LIBS})
+target_link_libraries(matthew matthewlib)
 
