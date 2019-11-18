@@ -14,6 +14,8 @@ I can read:
 
 ![Screenshot](doc/scrsht.png)
 
-## Matthew for point cloud data on [PCL](http://pointclouds.org)'s example point cloud "five people"
+## Matthew for point cloud data on a Lorentz attractor trajectory
+
+The data was generated using [this](scripts/lorentz.py) script.
 
 ![Point Cloud](doc/pcd.png)
