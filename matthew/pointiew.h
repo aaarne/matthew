@@ -7,6 +7,7 @@
 
 
 #include "matthew.h"
+#include "grid.h"
 
 class Pointiew : public Matthew {
 public:
@@ -32,11 +33,16 @@ private:
     float point_size;
     bool has_color;
     long n;
+    bool draw_grid = true;
+    float grid_intensity = 0.3;
     Eigen::MatrixXf colors;
     Eigen::Vector3f color;
     Eigen::MatrixXf points;
 
+    std::shared_ptr<Grid> grid;
+
     nanogui::GLShader pcdShader;
+    nanogui::GLShader gridShader;
 };
 
 
