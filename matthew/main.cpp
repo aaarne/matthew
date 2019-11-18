@@ -1,6 +1,7 @@
 #include <fstream>
 #include "meshiew.h"
 #include "pointiew.h"
+#include "CLI11.hpp"
 
 using namespace std;
 
@@ -12,22 +13,23 @@ bool has_ending(std::string const &fullString, std::string const &ending) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
+    CLI::App cli{"Matthew"};
     std::string filename;
     bool fullscreen = false;
-    if (argc < 2) {
+
+    cli.add_option("file,-f,--file", filename, "The mesh/pointcloud to display");
+    cli.add_flag("--fullscreen,--fs", fullscreen, "Open in fullscreen mode");
+
+    CLI11_PARSE(cli, argc, argv);
+
+    if (cli.count("file") == 0) {
         vector<pair<string, string>> filetypes;
         filetypes.emplace_back("obj", "Wavefront OBJ");
         filetypes.emplace_back("off", "Object File Format");
         filetypes.emplace_back("stl", "STL");
         filetypes.emplace_back("pcd", "Point Cloud Data");
         filename = nanogui::file_dialog(filetypes, false);
-    } else {
-        filename = argv[1];
-    }
-
-    if (argc > 2) {
-        fullscreen = true;
     }
 
     ifstream testfile(filename);
