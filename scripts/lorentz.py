@@ -40,7 +40,7 @@ DATA ascii
 if __name__ == "__main__":
     from scipy.integrate import solve_ivp as ode45
     sol = ode45(
-        fun=lambda t, y: lorentz(y, 28, 10, 8.0 / 3),
+        fun=lambda t, y: lorentz(y, rho=28, sigma=10, beta=2.666),
         t_span=[0, 100.0],
         y0=np.array([1, 0, 0]),
         method='RK45',
