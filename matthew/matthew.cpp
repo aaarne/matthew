@@ -1,5 +1,10 @@
 #include "matthew.h"
 #include <surface_mesh/Surface_mesh.h>
+#include <nanogui/opengl.h>
+#include <nanogui/window.h>
+#include <nanogui/layout.h>
+#include <nanogui/colorpicker.h>
+#include <nanogui/label.h>
 #include "shaders_gen.h"
 
 using namespace std;
@@ -19,9 +24,7 @@ void Matthew::run(std::string mesh_file) {
     mCamera.arcball.setSize(mSize);
     mCamera.modelZoom = 2 / get_model_dist_max();
     model_center = get_model_center();
-    cout << "model center: " << model_center << endl;
-    cout << "dist max: " << get_model_dist_max();
-    mCamera.modelTranslation = -Vector3f(model_center.x, model_center.y, model_center.z);
+    mCamera.modelTranslation = -model_center;
 }
 
 bool Matthew::keyboardEvent(int key, int scancode, int action, int modifiers) {
@@ -65,10 +68,7 @@ bool Matthew::mouseMotionEvent(const Vector2i &p, const Vector2i &rel, int butto
         } else if (mTranslate) {
             Eigen::Matrix4f model, view, proj;
             computeCameraMatrices(model, view, proj);
-            float zval = nanogui::project(Vector3f(model_center.x,
-                                                   model_center.y,
-                                                   model_center.z),
-                                          view * model, proj, mSize).z();
+            float zval = nanogui::project(model_center, view * model, proj, mSize).z();
             Eigen::Vector3f pos1 = nanogui::unproject(
                     Eigen::Vector3f(p.x(), mSize.y() - p.y(), zval), view * model, proj, mSize);
             Eigen::Vector3f pos0 = nanogui::unproject(

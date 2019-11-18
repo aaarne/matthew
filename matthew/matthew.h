@@ -1,17 +1,6 @@
-#include <nanogui/opengl.h>
-#include <nanogui/glutil.h>
-#include <nanogui/screen.h>
-#include <nanogui/window.h>
-#include <nanogui/layout.h>
-#include <nanogui/colorpicker.h>
-#include <nanogui/checkbox.h>
-#include <nanogui/popupbutton.h>
-#include <nanogui/label.h>
-#include <nanogui/button.h>
-#include <nanogui/textbox.h>
-#include <nanogui/tabwidget.h>
-#include <nanogui/slider.h>
 #include <surface_mesh/Surface_mesh.h>
+#include <nanogui/screen.h>
+#include <nanogui/glutil.h>
 
 
 #ifndef MATTHEW_H
@@ -27,10 +16,6 @@ public:
 
 protected:
 
-    typedef surface_mesh::Surface_mesh Surface_mesh;
-    typedef surface_mesh::Scalar Scalar;
-    typedef surface_mesh::Point Point;
-
     virtual void load(std::string filename) = 0;
 
     void drawContents() final;
@@ -43,7 +28,7 @@ protected:
 
     virtual void create_gui_elements(nanogui::Window *window) = 0;
 
-    virtual Point get_model_center() = 0;
+    virtual Eigen::Vector3f get_model_center() = 0;
     virtual float get_model_dist_max() = 0;
 
     std::string filename;
@@ -66,7 +51,7 @@ private:
                                Eigen::Matrix4f &view,
                                Eigen::Matrix4f &proj);
 
-    Point model_center;
+    Eigen::Vector3f model_center;
     bool keyboardEvent(int key, int scancode, int action, int modifiers) override;
 
     void draw(NVGcontext *ctx) override;

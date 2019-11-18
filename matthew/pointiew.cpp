@@ -5,6 +5,15 @@
 #include <fstream>
 #include "pointiew.h"
 #include "shaders_gen.h"
+#include <nanogui/opengl.h>
+#include <nanogui/window.h>
+#include <nanogui/layout.h>
+#include <nanogui/colorpicker.h>
+#include <nanogui/label.h>
+#include <nanogui/button.h>
+#include <nanogui/checkbox.h>
+#include <nanogui/textbox.h>
+#include <nanogui/slider.h>
 
 using namespace std;
 
@@ -130,9 +139,8 @@ void Pointiew::create_gui_elements(nanogui::Window *control) {
     checkbox->setChecked(this->has_color);
 }
 
-Matthew::Point Pointiew::get_model_center() {
-    Eigen::Vector3f center = points.rowwise().mean();
-    return {center(0), center(1), center(2)};
+Eigen::Vector3f Pointiew::get_model_center() {
+    return points.rowwise().mean();
 }
 
 float Pointiew::get_model_dist_max() {

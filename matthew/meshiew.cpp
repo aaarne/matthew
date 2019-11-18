@@ -4,6 +4,14 @@
 
 #include <shaders_gen.h>
 #include "meshiew.h"
+#include <nanogui/opengl.h>
+#include <nanogui/window.h>
+#include <nanogui/layout.h>
+#include <nanogui/colorpicker.h>
+#include <nanogui/label.h>
+#include <nanogui/button.h>
+#include <nanogui/checkbox.h>
+#include <nanogui/textbox.h>
 
 using namespace std;
 using namespace Eigen;
@@ -517,7 +525,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control) {
     new Label(window, "Filename:", "sans-bold");
     new Label(window, filename, "sans");
 
-    auto info_line = [&](std::string title, int value) {
+    auto info_line = [&](const std::string &title, int value) {
         new Label(window, title + ":");
         auto *box = new IntBox<int>(window);
         box->setEditable(false);
@@ -540,7 +548,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control) {
     }
 
     new Label(window, "Closed");
-    CheckBox *check = new CheckBox(window, "");
+    auto *check = new CheckBox(window, "");
     check->setChecked(closed);
     check->setEnabled(false);
 }
@@ -558,8 +566,8 @@ Meshiew::~Meshiew() {
     mShaderNormals.free();
 }
 
-Point Meshiew::get_model_center() {
-    return mesh_center;
+Eigen::Vector3f Meshiew::get_model_center() {
+    return {mesh_center.x, mesh_center.y, mesh_center.z};
 }
 
 float Meshiew::get_model_dist_max() {

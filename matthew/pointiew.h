@@ -22,7 +22,7 @@ protected:
 
     void create_gui_elements(nanogui::Window*) override;
 
-    Point get_model_center() override;
+    Eigen::Vector3f get_model_center() override;
 
     float get_model_dist_max() override;
 

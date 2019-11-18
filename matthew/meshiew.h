@@ -15,6 +15,10 @@ public:
     virtual ~Meshiew();
 
 protected:
+    typedef surface_mesh::Surface_mesh Surface_mesh;
+    typedef surface_mesh::Scalar Scalar;
+    typedef surface_mesh::Point Point;
+
     void meshProcess();
 
     void calc_weights();
@@ -41,7 +45,7 @@ protected:
 
     void initShaders() override;
 
-    Point get_model_center() override;
+    Eigen::Vector3f get_model_center() override;
 
     float get_model_dist_max() override;
 
