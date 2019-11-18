@@ -20,7 +20,9 @@ protected:
 
     void initShaders() override;
 
-    void create_gui_elements(nanogui::Window*) override;
+    void create_gui_elements(nanogui::Window *, nanogui::Window *info) override;
+
+    Eigen::Vector3f get_model_dimensions() override;
 
     Eigen::Vector3f get_model_center() override;
 

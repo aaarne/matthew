@@ -26,12 +26,12 @@ void Meshiew::calc_weights() {
 }
 
 void Meshiew::set_color(Surface_mesh::Vertex v, const surface_mesh::Color &col,
-                            Surface_mesh::Vertex_property<surface_mesh::Color> color_prop) {
+                        Surface_mesh::Vertex_property<surface_mesh::Color> color_prop) {
     color_prop[v] = col;
 }
 
 void Meshiew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_mesh *mesh,
-                               Surface_mesh::Vertex_property<surface_mesh::Color> color_prop, int bound) {
+                           Surface_mesh::Vertex_property<surface_mesh::Color> color_prop, int bound) {
     std::vector<Scalar> values = prop.vector();
 
     // discard upper and lower bound
@@ -236,6 +236,7 @@ void Meshiew::meshProcess() {
     mShaderNormals.uploadIndices(indices);
     mShaderNormals.uploadAttrib("position", mesh_points);
     mShaderNormals.uploadAttrib("normal", normals_attrib);
+    this->mesh_points = mesh_points;
 }
 
 void Meshiew::calc_edges_weights() {
@@ -411,7 +412,7 @@ Point Meshiew::computeCenter(Surface_mesh *mesh) {
     return center / mesh->n_vertices();
 }
 
-void Meshiew::create_gui_elements(nanogui::Window *control) {
+void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *info) {
     using namespace nanogui;
     Button *b;
 
@@ -516,15 +517,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control) {
         this->curvature_type = GAUSS;
     });
 
-    Window *window = new Window(this, "Mesh Info");
-    window->setPosition(Vector2i(mFBSize(0)-250, 15));
-    grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
-    grid->setSpacing(0, 10);
-    window->setLayout(grid);
-
-    new Label(window, "Filename:", "sans-bold");
-    new Label(window, filename, "sans");
-
+    Window *window = info;
     auto info_line = [&](const std::string &title, int value) {
         new Label(window, title + ":");
         auto *box = new IntBox<int>(window);
@@ -572,4 +565,8 @@ Eigen::Vector3f Meshiew::get_model_center() {
 
 float Meshiew::get_model_dist_max() {
     return dist_max;
+}
+
+Vector3f Meshiew::get_model_dimensions() {
+    return mesh_points.rowwise().maxCoeff() - mesh_points.rowwise().minCoeff();
 }

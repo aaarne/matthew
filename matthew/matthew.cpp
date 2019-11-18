@@ -5,6 +5,8 @@
 #include <nanogui/layout.h>
 #include <nanogui/colorpicker.h>
 #include <nanogui/label.h>
+#include <iomanip>
+#include <nanogui/textbox.h>
 #include "shaders_gen.h"
 #include "meshiew.h"
 #include "pointiew.h"
@@ -43,13 +45,12 @@ void Matthew::run(std::string mesh_file) {
     }
     initShaders();
     load(filename);
-    initGUI();
-
     mCamera.arcball = nanogui::Arcball();
     mCamera.arcball.setSize(mSize);
     mCamera.modelZoom = 2 / get_model_dist_max();
     model_center = get_model_center();
     mCamera.modelTranslation = -model_center;
+    initGUI();
 }
 
 bool Matthew::keyboardEvent(int key, int scancode, int action, int modifiers) {
@@ -154,7 +155,34 @@ void Matthew::initGUI() {
     cp->setCallback([this](const Color &c) {
         this->setBackground(c);
     });
-    create_gui_elements(window);
+
+    auto *info = new Window(this, "Info");
+    info->setPosition(Vector2i(mFBSize(0) - 300, 15));
+    auto grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
+    grid->setSpacing(0, 10);
+    info->setLayout(grid);
+    new Label(info, "Filename:", "sans-bold");
+    new Label(info, filename, "sans");
+    create_gui_elements(window, info);
+
+    auto vec2widget = [info](const std::string &title, const Eigen::Vector3f &v) {
+        new Label(info, title);
+        auto *widget = new Widget(info);
+        widget->setLayout(new BoxLayout(Orientation::Horizontal));
+        auto add_box = [=](float value) {
+            auto *box = new FloatBox<float>(widget);
+            box->setEditable(false);
+            box->setFontSize(14);
+            box->setValue(value);
+        };
+        add_box(v(0));
+        add_box(v(1));
+        add_box(v(2));
+    };
+
+    vec2widget("Center", model_center);
+    vec2widget("Dimensions", this->get_model_dimensions());
+
     performLayout();
 }
 

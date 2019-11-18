@@ -28,10 +28,12 @@ protected:
 
     virtual void initShaders() = 0;
 
-    virtual void create_gui_elements(nanogui::Window *window) = 0;
+    virtual void create_gui_elements(nanogui::Window *window, nanogui::Window *info) = 0;
 
     virtual Eigen::Vector3f get_model_center() = 0;
     virtual float get_model_dist_max() = 0;
+
+    virtual Eigen::Vector3f get_model_dimensions() = 0;
 
     std::string filename;
 

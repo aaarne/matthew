@@ -1,10 +1,8 @@
 #include <fstream>
-#include "meshiew.h"
-#include "pointiew.h"
+#include "matthew.h"
 #include "CLI11.hpp"
 
 using namespace std;
-
 
 int main(int argc, char **argv) {
     CLI::App cli{"Matthew"};
@@ -13,7 +11,7 @@ int main(int argc, char **argv) {
     cli.add_option("file,-f,--file", filename, "The mesh/pointcloud to display")->check(CLI::ExistingFile);
     bool fullscreen = false;
     cli.add_flag("--fullscreen,--fs", fullscreen, "Open in fullscreen mode");
-    std::vector<float> background_color = {0, 0, 0};
+    std::vector<float> background_color = {0.3, 0.3, 0.32};
     cli.add_option("--background", background_color, "Background Color (RGB 0..1)")->expected(3);
 
     CLI11_PARSE(cli, argc, argv);

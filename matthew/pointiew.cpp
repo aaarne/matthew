@@ -10,7 +10,6 @@
 #include <nanogui/layout.h>
 #include <nanogui/colorpicker.h>
 #include <nanogui/label.h>
-#include <nanogui/button.h>
 #include <nanogui/checkbox.h>
 #include <nanogui/textbox.h>
 #include <nanogui/slider.h>
@@ -96,7 +95,7 @@ void Pointiew::initShaders() {
     pcdShader.init("pcd", point_cloud_verts, point_cloud_frag);
 }
 
-void Pointiew::create_gui_elements(nanogui::Window *control) {
+void Pointiew::create_gui_elements(nanogui::Window *control, nanogui::Window *info) {
     using namespace nanogui;
 
     new Label(control, "Base Color:", "sans-bold");
@@ -114,14 +113,11 @@ void Pointiew::create_gui_elements(nanogui::Window *control) {
         this->point_size = std::max(0.1f, 10.0f * value);
     });
 
-    Window *window = new Window(this, "Point Cloud Info");
+    Window *window = info;
     window->setPosition(Vector2i(mFBSize(0)-250, 15));
     auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
     grid->setSpacing(0, 10);
     window->setLayout(grid);
-
-    new Label(window, "Filename:", "sans-bold");
-    new Label(window, filename, "sans");
 
     auto info_line = [&](std::string title, int value) {
         new Label(window, title + ":");
@@ -147,6 +143,10 @@ float Pointiew::get_model_dist_max() {
     Eigen::Vector3f center = points.rowwise().mean();
     Eigen::VectorXf lens = (points.colwise() - center).colwise().norm();
     return lens.maxCoeff();
+}
+
+Eigen::Vector3f Pointiew::get_model_dimensions() {
+    return points.rowwise().maxCoeff() - points.rowwise().minCoeff();
 }
 
 void Pointiew::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {

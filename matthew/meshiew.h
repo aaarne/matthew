@@ -35,7 +35,9 @@ protected:
 
     void calc_gauss_curvature();
 
-    void create_gui_elements(nanogui::Window *control) override;
+    void create_gui_elements(nanogui::Window *control, nanogui::Window *info) override;
+
+    Eigen::Vector3f get_model_dimensions() override;
 
     void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) override;
 
@@ -83,6 +85,8 @@ protected:
     Eigen::Vector3f light_color;
     nanogui::GLShader mShader;
     nanogui::GLShader mShaderNormals;
+
+    Eigen::MatrixXf mesh_points;
     Surface_mesh mesh;
     bool normals = false;
     nanogui::PopupButton *popupCurvature;
