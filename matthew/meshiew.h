@@ -60,7 +60,7 @@ protected:
     surface_mesh::Color value_to_color(Scalar value, Scalar min_value, Scalar max_value);
 
     enum COLOR_MODE : int {
-        NORMAL = 0, VALENCE = 1, CURVATURE = 2, PLAIN = 10, SEXY = 100
+        NORMAL = 0, VALENCE = 1, CURVATURE = 2, PLAIN = 10, SEXY = 100, BROKEN_NORMALS = 1000
     };
 
     enum CURVATURE_TYPE : int {
@@ -68,7 +68,7 @@ protected:
     };
 
     enum LIGHT_MODEL : int {
-        NO_LIGHT = 0, LAMBERT = 1, PHONG = 2, SHINY = 3
+        NO_LIGHT = 0, LAMBERT = 1, PHONG = 2, SHINY = 3, SELF_GLOW = 4
     };
 
     int n_faces = 0;

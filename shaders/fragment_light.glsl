@@ -42,6 +42,8 @@ void main() {
         result = ambient() + diffuse(N, light_pos) + specular(N, V, light_pos);
     } else if (light_model == 3) {
         result = 2*specular(N, V, light_pos);
+    } else if (light_model == 4) {
+        result = ambient() + diffuse(N, light_pos) + diffuse(-N, light_pos);
     } else {
         result = fcolor;
     }

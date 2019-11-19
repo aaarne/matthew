@@ -97,6 +97,9 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
         case SEXY:
             light_model = SHINY;
             break;
+        case BROKEN_NORMALS:
+            light_model = SELF_GLOW;
+            break;
         case PLAIN:
         default:
             light_model = NO_LIGHT;
@@ -449,10 +452,10 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         this->wireframe = false;
     });
 
-    b = new Button(control, "Sexy");
+    b = new Button(control, "Broken Normals");
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
-        this->color_mode = SEXY;
+        this->color_mode = BROKEN_NORMALS;
         this->wireframeBtn->setPushed(false);
         this->wireframe = false;
     });
