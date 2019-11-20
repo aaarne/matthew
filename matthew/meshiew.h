@@ -5,12 +5,13 @@
 #ifndef MATTHEW_MESH_PROCESSING_H
 #define MATTHEW_MESH_PROCESSING_H
 
-
 #include "matthew.h"
 
 class Meshiew : public Matthew {
+    friend class Matthew;
+
 public:
-    explicit Meshiew(bool fs);
+    explicit Meshiew(bool fs = false);
 
     virtual ~Meshiew();
 
@@ -18,6 +19,10 @@ protected:
     typedef surface_mesh::Surface_mesh Surface_mesh;
     typedef surface_mesh::Scalar Scalar;
     typedef surface_mesh::Point Point;
+
+    void load_from_file(const std::string &filename) override;
+
+    void load(Surface_mesh &mesh);
 
     void meshProcess();
 
@@ -43,7 +48,7 @@ protected:
 
     static Point computeCenter(Surface_mesh *mesh);
 
-    void load(std::string filename);
+    void initModel();
 
     void initShaders() override;
 
@@ -87,7 +92,6 @@ protected:
     nanogui::GLShader mShaderNormals;
 
     Eigen::MatrixXf mesh_points;
-    Surface_mesh mesh;
     bool normals = false;
     nanogui::PopupButton *popupCurvature;
     Surface_mesh::Vertex_property <surface_mesh::Color> v_color_curvature;
@@ -97,7 +101,7 @@ protected:
     nanogui::Window *window;
     bool wireframe = false;
     nanogui::Button *wireframeBtn;
-
+    Surface_mesh mesh;
 };
 
 

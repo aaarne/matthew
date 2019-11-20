@@ -13,7 +13,6 @@ find_package(NanoGUI)
 find_package(SurfaceMesh)
 
 add_definitions(${NANOGUI_EXTRA_DEFS})
-include_directories(${NANOGUI_EXTRA_INCS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/externals/cli)
 
 # Deploy files once to the executable dir

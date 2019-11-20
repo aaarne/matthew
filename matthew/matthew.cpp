@@ -26,7 +26,7 @@ bool has_ending(std::string const &fullString, std::string const &ending) {
     }
 }
 
-Matthew *Matthew::create_matthew(std::string filename, bool fullscreen) {
+Matthew *Matthew::create(const std::string &filename, bool fullscreen) {
     Matthew *matthew;
     if (has_ending(filename, "pcd")) {
         matthew = new Pointiew(fullscreen);
@@ -35,16 +35,14 @@ Matthew *Matthew::create_matthew(std::string filename, bool fullscreen) {
     } else {
         throw std::invalid_argument("Unknown filetype");
     }
+    matthew->load_from_file(filename);
     matthew->filename = filename;
     return matthew;
 }
 
-void Matthew::run(std::string mesh_file) {
-    if (mesh_file != "") {
-        this->filename = mesh_file;
-    }
+void Matthew::run() {
     initShaders();
-    load(filename);
+    initModel();
     mCamera.arcball = nanogui::Arcball();
     mCamera.arcball.setSize(mSize);
     mCamera.modelZoom = 2 / get_model_dist_max();
@@ -166,8 +164,10 @@ void Matthew::initGUI() {
     auto grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
     grid->setSpacing(0, 10);
     info->setLayout(grid);
-    new Label(info, "Filename:", "sans-bold");
-    new Label(info, filename, "sans");
+    if (filename != "") {
+        new Label(info, "Filename:", "sans-bold");
+        new Label(info, filename, "sans");
+    }
     create_gui_elements(window, info);
 
     new Label(window, "Hide Windows");
@@ -210,3 +210,75 @@ void Matthew::drawContents() {
     draw(view * model, projection);
 }
 
+Matthew* Matthew::create(surface_mesh::Surface_mesh &mesh, bool fullscreen) {
+    auto matt = new Meshiew(fullscreen);
+    matt->mesh = mesh;
+    return matt;
+}
+
+Matthew* Matthew::create(Eigen::VectorXf &points, bool fullscreen) {
+    auto matt = new Pointiew(fullscreen);
+    matt->points = points;
+    matt->has_color = false;
+    return matt;
+}
+
+Matthew* Matthew::create(Eigen::VectorXf &points, Eigen::VectorXf &colors, bool fullscreen) {
+    auto matt = new Pointiew(fullscreen);
+    matt->points = points;
+    matt->colors = colors;
+    matt->has_color = true;
+    return matt;
+}
+
+void matthew::run_app(Matthew *matt) {
+    nanogui::ref<Matthew> app = matt;
+    app->run();
+    app->drawAll();
+    app->setVisible(true);
+    nanogui::mainloop();
+    nanogui::shutdown();
+}
+
+Matthew *matthew::create_matthew(const std::string &filename, bool fullscreen) {
+    return Matthew::create(filename, fullscreen);
+}
+
+void matthew::matthew(const std::string &filename, bool fullscreen) {
+    nanogui::init();
+    run_app(create_matthew(filename, fullscreen));
+}
+
+Matthew *matthew::create_show_mesh(surface_mesh::Surface_mesh &mesh, bool fullscreen) {
+    return Matthew::create(mesh, fullscreen);
+}
+
+void matthew::show_mesh(surface_mesh::Surface_mesh &mesh, bool fullscreen) {
+    nanogui::init();
+    run_app(create_show_mesh(mesh, fullscreen));
+}
+
+Matthew *matthew::create_show_point_cloud(Eigen::VectorXf &points, VectorXf &colors, bool fullscreen) {
+    return Matthew::create(points, colors, fullscreen);
+}
+
+void matthew::show_point_cloud(Eigen::VectorXf &points, Eigen::VectorXf &colors, bool fullscreen) {
+    nanogui::init();
+    run_app(create_show_point_cloud(points, colors, fullscreen));
+}
+
+Matthew *matthew::create_show_point_cloud(Eigen::VectorXf &points, bool fullscreen) {
+    return Matthew::create(points, fullscreen);
+}
+
+void matthew::show_point_cloud(Eigen::VectorXf &points, bool fullscreen) {
+    nanogui::init();
+    run_app(create_show_point_cloud(points, fullscreen));
+}
+
+void matthew::matthew(const std::string &filename, bool fullscreen, const std::function<void(Matthew *)>& transformer) {
+    nanogui::init();
+    auto matt = create_matthew(filename, fullscreen);
+    transformer(matt);
+    run_app(matt);
+}

@@ -388,12 +388,7 @@ void Meshiew::initShaders() {
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
 }
 
-void Meshiew::load(string filename) {
-    if (!mesh.read(filename)) {
-        std::cerr << "Mesh not found, exiting." << std::endl;
-        exit(-1);
-    }
-
+void Meshiew::initModel() {
     mesh_center = computeCenter(&mesh);
     dist_max = 0.0f;
     for (auto v: mesh.vertices()) {
@@ -572,4 +567,15 @@ float Meshiew::get_model_dist_max() {
 
 Vector3f Meshiew::get_model_dimensions() {
     return mesh_points.rowwise().maxCoeff() - mesh_points.rowwise().minCoeff();
+}
+
+void Meshiew::load_from_file(const std::string &filename) {
+    if (!mesh.read(filename)) {
+        std::cerr << "Mesh not found, exiting." << std::endl;
+        exit(-1);
+    }
+}
+
+void Meshiew::load(Surface_mesh &mesh) {
+    this->mesh = mesh;
 }

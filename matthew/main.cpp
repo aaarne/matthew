@@ -27,14 +27,10 @@ int main(int argc, char **argv) {
 
     Eigen::Vector3f bgcol(background_color[0], background_color[1], background_color[2]);
 
-    nanogui::init();
-    nanogui::ref<Matthew> app = Matthew::create_matthew(filename, fullscreen);
-    app->setBackground(bgcol);
-    app->run();
-    app->drawAll();
-    app->setVisible(true);
-    nanogui::mainloop();
-    nanogui::shutdown();
+    matthew::matthew(filename, fullscreen, [&](Matthew *app) {
+        app->setBackground(bgcol);
+        cout << "Matthew created." << endl;
+    });
 
     return 0;
 }

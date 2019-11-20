@@ -10,12 +10,15 @@
 #include "grid.h"
 
 class Pointiew : public Matthew {
+    friend class Matthew;
 public:
-    explicit Pointiew(bool fs);
+    explicit Pointiew(bool fs = false);
 
 protected:
 
-    void load(std::string filename) override;
+    void load_from_file(const std::string &filename) override;
+
+    void initModel() override;
 
     void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) override;
 

@@ -7,18 +7,25 @@
 #ifndef MATTHEW_H
 #define MATTHEW_H
 
+
 class Matthew : public nanogui::Screen {
 public:
     explicit Matthew(bool fs);
     virtual ~Matthew() = default;
 
-    void run(std::string mesh_file = "");
+    void run();
 
-    static Matthew *create_matthew(std::string filename, bool fullscreen=false);
+    static Matthew *create(const std::string &filename, bool fullscreen=false);
+    static Matthew *create(surface_mesh::Surface_mesh &mesh, bool fullscreen= false);
+    static Matthew *create(Eigen::VectorXf &points, Eigen::VectorXf &colors, bool fullscreen= false);
+    static Matthew *create(Eigen::VectorXf &points, bool fullscreen= false);
+
 
 protected:
 
-    virtual void load(std::string filename) = 0;
+    virtual void load_from_file(const std::string &filename) = 0;
+
+    virtual void initModel() = 0;
 
     void drawContents() final;
 
@@ -78,5 +85,18 @@ private:
     Eigen::Vector2i mTranslateStart = Eigen::Vector2i(0, 0);
 
 };
+
+namespace matthew {
+    void run_app(Matthew *matt);
+    Matthew *create_matthew(const std::string &filename, bool fullscreen = false);
+    void matthew(const std::string &filename, bool fullscreen = false);
+    void matthew(const std::string &filename, bool fullscreen, const std::function<void(Matthew*)>& transformer);
+    Matthew *create_show_mesh(surface_mesh::Surface_mesh &mesh, bool fullscreen = false);
+    void show_mesh(surface_mesh::Surface_mesh &mesh, bool fullscreen = false);
+    Matthew *create_show_point_cloud(Eigen::VectorXf &points, Eigen::VectorXf &colors, bool fullscreen = false);
+    void show_point_cloud(Eigen::VectorXf &points, Eigen::VectorXf &colors, bool fullscreen = false);
+    Matthew *create_show_point_cloud(Eigen::VectorXf &points, bool fullscreen = false);
+    void show_point_cloud(Eigen::VectorXf &points, bool fullscreen = false);
+}
 
 #endif

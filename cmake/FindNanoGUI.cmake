@@ -27,6 +27,8 @@ if(NOT NANOGUI_FOUND)
         "${NANOGUI_DIR}/include"
         "${NANOGUI_DIR}/ext/nanovg/src"
         "${NANOGUI_DIR}/ext/glfw/include")
-    include_directories(${NANOGUI_INCLUDE_DIRS})
+
+    target_include_directories(nanogui PUBLIC
+            ${NANOGUI_INCLUDE_DIRS})
 
 endif(NOT NANOGUI_FOUND)
