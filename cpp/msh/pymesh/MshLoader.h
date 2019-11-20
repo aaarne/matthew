@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include <EigenTypedef.h>
+#include <pymesh/EigenTypedef.h>
 
 namespace PyMesh {
 

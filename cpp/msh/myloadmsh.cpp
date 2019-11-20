@@ -3,7 +3,7 @@
 //
 
 #include "myloadmsh.h"
-#include "MshLoader.h"
+#include "pymesh/MshLoader.h"
 #include <iostream>
 #include <memory>
 

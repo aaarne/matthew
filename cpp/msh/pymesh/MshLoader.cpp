@@ -5,7 +5,7 @@
 #include <sstream>
 #include <vector>
 
-#include <Exception.h>
+#include <pymesh/Exception.h>
 #include "IOUtils.h"
 
 using namespace PyMesh;

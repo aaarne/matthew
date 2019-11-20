@@ -1,7 +1,7 @@
 /* This file is part of PyMesh. Copyright (c) 2015 by Qingnan Zhou */
 #include "IOUtils.h"
 #include <cstring>
-#include <Exception.h>
+#include <pymesh/Exception.h>
 
 using namespace PyMesh;
 
