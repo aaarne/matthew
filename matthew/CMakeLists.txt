@@ -14,7 +14,7 @@ add_library(matthewlib grid.cpp matthew.cpp meshiew.cpp pointiew.cpp ${SHADER_HE
 target_include_directories(matthewlib PUBLIC
         ${NANOGUI_EXTRA_INCS}
         ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(matthewlib surface_mesh)
+target_link_libraries(matthewlib surface_mesh mshloader)
 target_link_libraries(matthewlib nanogui ${NANOGUI_EXTRA_LIBS})
 target_link_libraries(matthew matthewlib)
 

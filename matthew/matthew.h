@@ -23,6 +23,8 @@ public:
 
 protected:
 
+    static bool has_ending(std::string const &fullString, std::string const &ending);
+
     virtual void load_from_file(const std::string &filename) = 0;
 
     virtual void initModel() = 0;
@@ -60,6 +62,7 @@ private:
     bool demo_mode = false;
 
     std::vector<nanogui::Window*> windows;
+    nanogui::Window* control;
     CameraParameters mCamera;
     void computeCameraMatrices(Eigen::Matrix4f &model,
                                Eigen::Matrix4f &view,
@@ -71,8 +74,6 @@ private:
     void draw(NVGcontext *ctx) override;
 
     Eigen::Vector2f getScreenCoord();
-
-    void repaint();
 
     bool scrollEvent(const Eigen::Vector2i &p, const Eigen::Vector2f &rel) override;
 

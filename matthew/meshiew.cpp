@@ -4,6 +4,7 @@
 
 #include <shaders_gen.h>
 #include "meshiew.h"
+#include "myloadmsh.h"
 #include <nanogui/opengl.h>
 #include <nanogui/window.h>
 #include <nanogui/layout.h>
@@ -86,7 +87,8 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     }
 
     LIGHT_MODEL light_model;
-    switch (this->color_mode) {
+    if (broken_normals) light_model = SELF_GLOW;
+    else switch (this->color_mode) {
         case NORMAL:
             light_model = PHONG;
             break;
@@ -96,9 +98,6 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
             break;
         case SEXY:
             light_model = SHINY;
-            break;
-        case BROKEN_NORMALS:
-            light_model = SELF_GLOW;
             break;
         case PLAIN:
         default:
@@ -429,8 +428,18 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         this->normals = !this->normals;
     });
 
+    b = new Button(control, "Broken Normals");
+    b->setFlags(Button::ToggleButton);
+    b->setChangeCallback([this](bool value) {
+        this->broken_normals = value;
+    });
+
     new Label(control, "Color Mode");
-    b = new Button(control, "Plain");
+    auto p = new PopupButton(control, "Color Mode");
+    auto c = p->popup();
+    c->setLayout(new GroupLayout());
+
+    b = new Button(c, "Plain");
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = PLAIN;
@@ -438,7 +447,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         this->wireframe = true;
     });
 
-    b = new Button(control, "Normal");
+    b = new Button(c, "Normal");
     b->setPushed(true);
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
@@ -447,26 +456,19 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         this->wireframe = false;
     });
 
-    b = new Button(control, "Broken Normals");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->color_mode = BROKEN_NORMALS;
-        this->wireframeBtn->setPushed(false);
-        this->wireframe = false;
-    });
 
-    b = new Button(control, "Valence");
+    b = new Button(c, "Valence");
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = VALENCE;
     });
-    b = new Button(control, "Curvature");
+    b = new Button(c, "Curvature");
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = CURVATURE;
     });
 
-    auto colorPoputBtn = new PopupButton(control, "Colors");
+    auto colorPoputBtn = new PopupButton(c, "Colors");
     Popup *colorPopup = colorPoputBtn->popup();
     auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
     grid->setSpacing(0, 10);
@@ -493,8 +495,8 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         edge_color << c.r(), c.g(), c.b();
     });
 
-    new Label(control, "Curvature Type");
-    popupCurvature = new PopupButton(control, "Curvature Type");
+    new Label(c, "Curvature Type");
+    popupCurvature = new PopupButton(c, "Curvature Type");
     Popup *curvPopup = popupCurvature->popup();
     curvPopup->setLayout(new GroupLayout());
     new Label(curvPopup, "Curvature Type", "sans-bold");
@@ -570,7 +572,14 @@ Vector3f Meshiew::get_model_dimensions() {
 }
 
 void Meshiew::load_from_file(const std::string &filename) {
-    if (!mesh.read(filename)) {
+    bool success = false;
+    if (has_ending(filename, "msh")) {
+        success = loadmsh::load_msh_file(filename, mesh);
+    } else {
+        success = mesh.read(filename);
+    }
+
+    if (!success) {
         std::cerr << "Mesh not found, exiting." << std::endl;
         exit(-1);
     }

@@ -18,7 +18,7 @@ Matthew::Matthew(bool fs) :
         nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew", true, fs), demo_mode(fs) {
 }
 
-bool has_ending(std::string const &fullString, std::string const &ending) {
+bool Matthew::has_ending(std::string const &fullString, std::string const &ending) {
     if (fullString.length() >= ending.length()) {
         return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
     } else {
@@ -28,9 +28,10 @@ bool has_ending(std::string const &fullString, std::string const &ending) {
 
 Matthew *Matthew::create(const std::string &filename, bool fullscreen) {
     Matthew *matthew;
+    vector<string> mshtypes = {"obj", "off", "stl", "msh"};
     if (has_ending(filename, "pcd")) {
         matthew = new Pointiew(fullscreen);
-    } else if (has_ending(filename, "obj") || has_ending(filename, "off") || has_ending(filename, "stl")) {
+    } else if (std::any_of(mshtypes.begin(), mshtypes.end(), [&](string ending) {return has_ending(filename, ending);})) {
         matthew = new Meshiew(fullscreen);
     } else {
         throw std::invalid_argument("Unknown filetype");
@@ -60,9 +61,7 @@ bool Matthew::keyboardEvent(int key, int scancode, int action, int modifiers) {
         return true;
     }
     if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-        for (const auto &w : windows) {
-            w->setVisible(true);
-        }
+        control->setVisible(true);
     }
     return false;
 }
@@ -77,15 +76,9 @@ Vector2f Matthew::getScreenCoord() {
                     1.0f - 2.0f * (float) pos.y() / height());
 }
 
-void Matthew::repaint() {
-    //glfwPostEmptyEvent();
-}
-
-
 bool Matthew::scrollEvent(const Vector2i &p, const Vector2f &rel) {
     if (!Screen::scrollEvent(p, rel)) {
         mCamera.zoom = max(0.1, mCamera.zoom * (rel.y() > 0 ? 1.1 : 0.9));
-        repaint();
     }
     return true;
 }
@@ -93,7 +86,6 @@ bool Matthew::scrollEvent(const Vector2i &p, const Vector2f &rel) {
 bool Matthew::mouseMotionEvent(const Vector2i &p, const Vector2i &rel, int button, int modifiers) {
     if (!Screen::mouseMotionEvent(p, rel, button, modifiers)) {
         if (mCamera.arcball.motion(p)) {
-            repaint();
         } else if (mTranslate) {
             Eigen::Matrix4f model, view, proj;
             computeCameraMatrices(model, view, proj);
@@ -104,8 +96,6 @@ bool Matthew::mouseMotionEvent(const Vector2i &p, const Vector2i &rel, int butto
                     Eigen::Vector3f(mTranslateStart.x(), mSize.y() -
                                                          mTranslateStart.y(), zval), view * model, proj, mSize);
             mCamera.modelTranslation = mCamera.modelTranslation_start + (pos1 - pos0);
-            repaint();
-
         }
         return true;
     }
@@ -160,6 +150,7 @@ void Matthew::initGUI() {
     });
 
     auto *info = new Window(this, "Info");
+    info->setVisible(false);
     info->setPosition(Vector2i(mFBSize(0) - 300, 15));
     auto grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
     grid->setSpacing(0, 10);
@@ -170,8 +161,13 @@ void Matthew::initGUI() {
     }
     create_gui_elements(window, info);
 
-    new Label(window, "Hide Windows");
-    Button *b = new Button(window, "Hide");
+    new Label(window, "Windows");
+    Button *b = new Button(window, "Info");
+    b->setFlags(Button::ToggleButton);
+    b->setChangeCallback([info](bool value) {
+        info->setVisible(value);
+    });
+    b = new Button(window, "Hide");
     b->setCallback([this]() {
         cout << "Press space to reshow." << endl;
         for (const auto &w : this->windows) {

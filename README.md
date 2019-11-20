@@ -6,6 +6,7 @@ and I can remesh and improve meshes. Recently, point cloud support was added. I 
 
 I can read:
  - Wavefront (_*.obj_)
+ - Mesh (_*.msh_)
  - Object File Format (_*.off_)
  - STL (_*.stl_)
  - Point Cloud Data (*.pcd, ascii only)

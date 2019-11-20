@@ -32,3 +32,4 @@ copy_files_once(${DATA})
 add_subdirectory(externals/shader2header)
 
 add_subdirectory(matthew)
+add_subdirectory(cpp)
