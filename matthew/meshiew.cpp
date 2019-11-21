@@ -14,6 +14,8 @@
 #include <nanogui/checkbox.h>
 #include <nanogui/textbox.h>
 #include <nanogui/combobox.h>
+#include <nanogui/slider.h>
+#include <nanogui/textbox.h>
 
 using namespace std;
 using namespace Eigen;
@@ -82,18 +84,6 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
         mShaderNormals.setUniform("P", p);
         mShaderNormals.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
     }
-
-    LIGHT_MODEL light_model;
-    if (broken_normals) light_model = SELF_GLOW;
-    else switch (this->color_mode) {
-        case NORMAL:
-        case COLOR_CODE:
-            light_model = PHONG;
-            break;
-        default:
-            light_model = NO_LIGHT;
-    }
-    mShader.setUniform("light_model", int(light_model));
 }
 
 surface_mesh::Color Meshiew::value_to_color(Scalar value, Scalar min_value, Scalar max_value) {
@@ -352,6 +342,12 @@ void Meshiew::initModel() {
 
     meshProcess();
     upload_color("v:valence");
+    mShader.bind();
+    mShader.setUniform("broken_normals", (int)false);
+    mShader.setUniform("ambient_term", 0.3f);
+    mShader.setUniform("diffuse_term", 1.0f);
+    mShader.setUniform("specular_term", .5f);
+    mShader.setUniform("shininess", 8);
 
     for (const auto &vprop : mesh.vertex_properties()) {
         if (vprop[0] == 'v' && vprop[1] == ':') continue;
@@ -393,19 +389,16 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     b = new Button(control, "Broken Normals");
     b->setFlags(Button::ToggleButton);
     b->setChangeCallback([this](bool value) {
+        mShader.bind();
+        mShader.setUniform("broken_normals", (int)value);
         this->broken_normals = value;
+
     });
 
-    new Label(control, "Color Mode");
+    new Label(control, "Shading");
     auto p = new PopupButton(control, "Color Mode");
     auto c = p->popup();
     c->setLayout(new GroupLayout());
-
-    b = new Button(c, "Plain");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->color_mode = PLAIN;
-    });
 
     b = new Button(c, "Normal");
     b->setPushed(true);
@@ -421,7 +414,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         this->color_mode = COLOR_CODE;
     });
 
-    new Label(c, "Plain & Normal");
+    new Label(c, "Normal");
     auto colorPoputBtn = new PopupButton(c, "Colors");
     Popup *colorPopup = colorPoputBtn->popup();
     auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
@@ -464,6 +457,36 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         box->setFontSize(14);
         box->setValue(value);
     };
+
+    auto light_model_btn = new PopupButton(control, "LightModel");
+    auto light_model_pp = light_model_btn->popup();
+
+    auto add_slider = [this, light_model_pp](const std::string &label, const std::string &key, float def) {
+        new Label(light_model_pp, label);
+        auto tmp_widget = new Widget(light_model_pp);
+        tmp_widget->setLayout(new BoxLayout(Orientation::Horizontal));
+        auto slider = new Slider(tmp_widget);
+        slider->setValue(def);
+        slider->setCallback([this,key](float value) {
+            mShader.bind();
+            mShader.setUniform(key, value);
+        });
+    };
+
+    add_slider("Ambient", "ambient_term", 0.3);
+    add_slider("Diffuse", "diffuse_term", 1.0);
+    add_slider("Specular", "specular_term", 0.5);
+
+    new Label(light_model_pp, "Shininess");
+    auto box = new IntBox<int>(light_model_pp, 8);
+    box->setEditable(true);
+    box->setSpinnable(true);
+    box->setCallback([this](int value) {
+        mShader.bind();
+        mShader.setUniform("shininess", value);
+    });
+
+    light_model_pp->setLayout(new GroupLayout());
 
     bool closed = true;
     for (const auto &v : mesh.vertices()) {

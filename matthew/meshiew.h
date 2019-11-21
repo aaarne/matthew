@@ -70,10 +70,6 @@ protected:
         NORMAL = 0, COLOR_CODE = 1, PLAIN = 2
     };
 
-    enum LIGHT_MODEL : int {
-        NO_LIGHT = 0, LAMBERT = 1, PHONG = 2, SHINY = 3, SELF_GLOW = 4
-    };
-
     Point mesh_center;
     float dist_max;
 

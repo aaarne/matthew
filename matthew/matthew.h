@@ -44,6 +44,11 @@ protected:
 
     virtual Eigen::Vector3f get_model_dimensions() = 0;
 
+public:
+    bool resizeEvent(const Eigen::Vector2i &i) final;
+
+protected:
+
     std::string filename;
 
 private:
@@ -63,7 +68,7 @@ private:
 
     nanogui::Window* control;
     nanogui::Window* info;
-    CameraParameters mCamera;
+    CameraParameters cam;
     void computeCameraMatrices(Eigen::Matrix4f &model,
                                Eigen::Matrix4f &view,
                                Eigen::Matrix4f &proj);
@@ -84,7 +89,6 @@ private:
 
     bool mTranslate = false;
     Eigen::Vector2i mTranslateStart = Eigen::Vector2i(0, 0);
-
 };
 
 namespace matthew {

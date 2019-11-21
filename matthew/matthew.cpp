@@ -44,11 +44,11 @@ Matthew *Matthew::create(const std::string &filename, bool fullscreen) {
 void Matthew::run() {
     initShaders();
     initModel();
-    mCamera.arcball = nanogui::Arcball();
-    mCamera.arcball.setSize(mSize);
-    mCamera.modelZoom = 2 / get_model_dist_max();
+    cam.arcball = nanogui::Arcball();
+    cam.arcball.setSize(mSize);
+    cam.modelZoom = 2 / get_model_dist_max();
     model_center = get_model_center();
-    mCamera.modelTranslation = -model_center;
+    cam.modelTranslation = -model_center;
     initGUI();
 }
 
@@ -78,14 +78,14 @@ Vector2f Matthew::getScreenCoord() {
 
 bool Matthew::scrollEvent(const Vector2i &p, const Vector2f &rel) {
     if (!Screen::scrollEvent(p, rel)) {
-        mCamera.zoom = max(0.1, mCamera.zoom * (rel.y() > 0 ? 1.1 : 0.9));
+        cam.zoom = max(0.1, cam.zoom * (rel.y() > 0 ? 1.1 : 0.9));
     }
     return true;
 }
 
 bool Matthew::mouseMotionEvent(const Vector2i &p, const Vector2i &rel, int button, int modifiers) {
     if (!Screen::mouseMotionEvent(p, rel, button, modifiers)) {
-        if (mCamera.arcball.motion(p)) {
+        if (cam.arcball.motion(p)) {
         } else if (mTranslate) {
             Eigen::Matrix4f model, view, proj;
             computeCameraMatrices(model, view, proj);
@@ -95,7 +95,7 @@ bool Matthew::mouseMotionEvent(const Vector2i &p, const Vector2i &rel, int butto
             Eigen::Vector3f pos0 = nanogui::unproject(
                     Eigen::Vector3f(mTranslateStart.x(), mSize.y() -
                                                          mTranslateStart.y(), zval), view * model, proj, mSize);
-            mCamera.modelTranslation = mCamera.modelTranslation_start + (pos1 - pos0);
+            cam.modelTranslation = cam.modelTranslation_start + (pos1 - pos0);
         }
         return true;
     }
@@ -104,16 +104,16 @@ bool Matthew::mouseMotionEvent(const Vector2i &p, const Vector2i &rel, int butto
 bool Matthew::mouseButtonEvent(const Vector2i &p, int button, bool down, int modifiers) {
     if (!Screen::mouseButtonEvent(p, button, down, modifiers)) {
         if (button == GLFW_MOUSE_BUTTON_1 && modifiers == 0) {
-            mCamera.arcball.button(p, down);
+            cam.arcball.button(p, down);
         } else if (button == GLFW_MOUSE_BUTTON_2 ||
                    (button == GLFW_MOUSE_BUTTON_1 && modifiers == GLFW_MOD_SHIFT)) {
-            mCamera.modelTranslation_start = mCamera.modelTranslation;
+            cam.modelTranslation_start = cam.modelTranslation;
             mTranslate = true;
             mTranslateStart = p;
         }
     }
     if (button == GLFW_MOUSE_BUTTON_1 && !down) {
-        mCamera.arcball.button(p, false);
+        cam.arcball.button(p, false);
     }
     if (!down) {
         mTranslate = false;
@@ -124,16 +124,16 @@ bool Matthew::mouseButtonEvent(const Vector2i &p, int button, bool down, int mod
 
 void Matthew::computeCameraMatrices(Eigen::Matrix4f &model, Eigen::Matrix4f &view, Eigen::Matrix4f &proj) {
 
-    view = nanogui::lookAt(mCamera.eye, mCamera.center, mCamera.up);
+    view = nanogui::lookAt(cam.eye, cam.center, cam.up);
 
-    float fH = std::tan(mCamera.viewAngle / 360.0f * M_PI) * mCamera.dnear;
+    float fH = std::tan(cam.viewAngle / 360.0f * M_PI) * cam.dnear;
     float fW = fH * (float) mSize.x() / (float) mSize.y();
 
-    proj = nanogui::frustum(-fW, fW, -fH, fH, mCamera.dnear, mCamera.dfar);
-    model = mCamera.arcball.matrix();
+    proj = nanogui::frustum(-fW, fW, -fH, fH, cam.dnear, cam.dfar);
+    model = cam.arcball.matrix();
 
-    model = nanogui::scale(model, Eigen::Vector3f::Constant(mCamera.zoom * mCamera.modelZoom));
-    model = nanogui::translate(model, mCamera.modelTranslation);
+    model = nanogui::scale(model, Eigen::Vector3f::Constant(cam.zoom * cam.modelZoom));
+    model = nanogui::translate(model, cam.modelTranslation);
 }
 
 
@@ -225,6 +225,10 @@ Matthew* Matthew::create(Eigen::VectorXf &points, Eigen::VectorXf &colors, bool 
     matt->colors = colors;
     matt->has_color = true;
     return matt;
+}
+
+bool Matthew::resizeEvent(const Vector2i &i) {
+    cam.arcball.setSize(i);
 }
 
 void matthew::run_app(Matthew *matt) {
