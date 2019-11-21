@@ -70,5 +70,5 @@ if __name__ == "__main__":
         f'{join(dirname(realpath(__file__)), "../build/matthew/matthew")}',
         '--file', pcdfile, 
         '--background', "0", "0", "0", 
-        '--fullscreen'])
+        '--fs'])
 

@@ -229,6 +229,7 @@ Matthew* Matthew::create(Eigen::VectorXf &points, Eigen::VectorXf &colors, bool 
 
 bool Matthew::resizeEvent(const Vector2i &i) {
     cam.arcball.setSize(i);
+    return true;
 }
 
 void matthew::run_app(Matthew *matt) {

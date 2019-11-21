@@ -23,6 +23,8 @@ public:
 
 protected:
 
+    bool resizeEvent(const Eigen::Vector2i &i) override;
+
     static bool has_ending(std::string const &fullString, std::string const &ending);
 
     virtual void load_from_file(const std::string &filename) = 0;
@@ -44,8 +46,6 @@ protected:
 
     virtual Eigen::Vector3f get_model_dimensions() = 0;
 
-public:
-    bool resizeEvent(const Eigen::Vector2i &i) final;
 
 protected:
 
