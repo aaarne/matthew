@@ -87,10 +87,8 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     if (broken_normals) light_model = SELF_GLOW;
     else switch (this->color_mode) {
         case NORMAL:
-            light_model = PHONG;
-            break;
         case COLOR_CODE:
-            light_model = LAMBERT;
+            light_model = PHONG;
             break;
         default:
             light_model = NO_LIGHT;
