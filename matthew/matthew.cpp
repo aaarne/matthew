@@ -31,7 +31,7 @@ Matthew *Matthew::create(const std::string &filename, bool fullscreen) {
     vector<string> mshtypes = {"obj", "off", "stl", "msh"};
     if (has_ending(filename, "pcd")) {
         matthew = new Pointiew(fullscreen);
-    } else if (std::any_of(mshtypes.begin(), mshtypes.end(), [&](string ending) {return has_ending(filename, ending);})) {
+    } else if ((filename == "-") || std::any_of(mshtypes.begin(), mshtypes.end(), [&](string ending) {return has_ending(filename, ending);})) {
         matthew = new Meshiew(fullscreen);
     } else {
         throw std::invalid_argument("Unknown filetype");
@@ -139,43 +139,42 @@ void Matthew::computeCameraMatrices(Eigen::Matrix4f &model, Eigen::Matrix4f &vie
 
 void Matthew::initGUI() {
     using namespace nanogui;
-    auto *window = new Window(this, "Display Control");
-    window->setPosition(Vector2i(15, 15));
-    window->setLayout(new GroupLayout());
-    new Label(window, "Background");
-    auto cp = new ColorPicker(window, this->background());
+    control = new Window(this, "Display Control");
+    control->setPosition(Vector2i(15, 15));
+    control->setLayout(new GroupLayout());
+    new Label(control, "Background");
+    auto cp = new ColorPicker(control, this->background());
     cp->setFixedSize({100, 20});
     cp->setCallback([this](const Color &c) {
         this->setBackground(c);
     });
 
-    auto *info = new Window(this, "Info");
+    info = new Window(this, "Info");
     info->setVisible(false);
     info->setPosition(Vector2i(mFBSize(0) - 300, 15));
     auto grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
     grid->setSpacing(0, 10);
     info->setLayout(grid);
-    if (filename != "") {
+    if (!filename.empty()) {
         new Label(info, "Filename:", "sans-bold");
         new Label(info, filename, "sans");
     }
-    create_gui_elements(window, info);
+    create_gui_elements(control, info);
 
-    new Label(window, "Windows");
-    Button *b = new Button(window, "Info");
+    new Label(control, "Windows");
+    auto *b = new Button(control, "Info");
     b->setFlags(Button::ToggleButton);
-    b->setChangeCallback([info](bool value) {
+    b->setChangeCallback([this](bool value) {
         info->setVisible(value);
     });
-    b = new Button(window, "Hide");
+    b = new Button(control, "Hide");
     b->setCallback([this]() {
         cout << "Press space to reshow." << endl;
-        for (const auto &w : this->windows) {
-            w->setVisible(false);
-        }
+        control->setVisible(false);
+        info->setVisible(false);
     });
 
-    auto vec2widget = [info](const std::string &title, const Eigen::Vector3f &v) {
+    auto vec2widget = [this](const std::string &title, const Eigen::Vector3f &v) {
         new Label(info, title);
         auto *widget = new Widget(info);
         widget->setLayout(new BoxLayout(Orientation::Horizontal));
@@ -192,10 +191,11 @@ void Matthew::initGUI() {
 
     vec2widget("Center", model_center);
     vec2widget("Dimensions", this->get_model_dimensions());
-    this->windows.push_back(window);
-    this->windows.push_back(info);
 
-    if (demo_mode) for (const auto &w : windows) w->setVisible(false);
+    if (demo_mode) {
+        control->setVisible(false);
+        info->setVisible(false);
+    }
 
     performLayout();
 }

@@ -64,12 +64,10 @@ protected:
 
     surface_mesh::Color value_to_color(Scalar value, Scalar min_value, Scalar max_value);
 
-    enum COLOR_MODE : int {
-        NORMAL = 0, VALENCE = 1, CURVATURE = 2, PLAIN = 10, SEXY = 100
-    };
+    void upload_color(const std::string &prop_name);
 
-    enum CURVATURE_TYPE : int {
-        UNIMEAN = 2, LAPLACEBELTRAMI = 3, GAUSS = 4
+    enum COLOR_MODE : int {
+        NORMAL = 0, COLOR_CODE = 1, PLAIN = 2
     };
 
     enum LIGHT_MODEL : int {
@@ -79,9 +77,11 @@ protected:
     Point mesh_center;
     float dist_max;
 
+    std::vector<std::string> selectable_properties;
+    std::map<std::string, std::string> property_map;
+
     Eigen::Vector3f base_color;
     COLOR_MODE color_mode = NORMAL;
-    CURVATURE_TYPE curvature_type = GAUSS;
     Eigen::Vector3f edge_color;
     Eigen::Vector3f light_color;
     nanogui::GLShader mShader;
@@ -90,10 +90,6 @@ protected:
     Eigen::MatrixXf mesh_points;
     bool normals = false;
     nanogui::PopupButton *popupCurvature;
-    Surface_mesh::Vertex_property <surface_mesh::Color> v_color_curvature;
-    Surface_mesh::Vertex_property <surface_mesh::Color> v_color_gaussian_curv;
-    Surface_mesh::Vertex_property <surface_mesh::Color> v_color_unicurvature;
-    Surface_mesh::Vertex_property <surface_mesh::Color> v_color_valence;
     nanogui::Window *window;
     bool wireframe = false;
     bool broken_normals = false;

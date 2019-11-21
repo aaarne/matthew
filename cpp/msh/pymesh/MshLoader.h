@@ -17,6 +17,7 @@ class MshLoader {
 
     public:
         MshLoader(const std::string& filename);
+        MshLoader(std::istream &in);
 
     public:
         const VectorF& get_nodes() const { return m_nodes; }
@@ -57,11 +58,12 @@ class MshLoader {
         };
 
     private:
-        void parse_nodes(std::ifstream& fin);
-        void parse_elements(std::ifstream& fin);
-        void parse_node_field(std::ifstream& fin);
-        void parse_element_field(std::ifstream& fin);
-        void parse_unknown_field(std::ifstream& fin,
+        void parse_stream(std::istream& in);
+        void parse_nodes(std::istream& fin);
+        void parse_elements(std::istream& fin);
+        void parse_node_field(std::istream& fin);
+        void parse_element_field(std::istream& fin);
+        void parse_unknown_field(std::istream& fin,
                 const std::string& fieldname);
 
         int num_nodes_per_elem_type(int elem_type);

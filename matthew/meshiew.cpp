@@ -13,6 +13,7 @@
 #include <nanogui/button.h>
 #include <nanogui/checkbox.h>
 #include <nanogui/textbox.h>
+#include <nanogui/combobox.h>
 
 using namespace std;
 using namespace Eigen;
@@ -64,11 +65,7 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
 
     mShader.setUniform("intensity", base_color);
     mShader.setUniform("light_color", light_color);
-    if (color_mode == CURVATURE) {
-        mShader.setUniform("color_mode", int(curvature_type));
-    } else {
-        mShader.setUniform("color_mode", int(color_mode));
-    }
+    mShader.setUniform("color_mode", (int)color_mode);
     mShader.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
 
     if (wireframe) {
@@ -92,14 +89,9 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
         case NORMAL:
             light_model = PHONG;
             break;
-        case VALENCE:
-        case CURVATURE:
+        case COLOR_CODE:
             light_model = LAMBERT;
             break;
-        case SEXY:
-            light_model = SHINY;
-            break;
-        case PLAIN:
         default:
             light_model = NO_LIGHT;
     }
@@ -146,31 +138,12 @@ void Meshiew::meshProcess() {
             mesh.vertex_property<Point>("v:normal");
     mesh.update_face_normals();
     mesh.update_vertex_normals();
-    v_color_valence = mesh.vertex_property<Color>("v:color_valence",
-                                                  Color(1.0f, 1.0f, 1.0f));
-    v_color_unicurvature = mesh.vertex_property<Color>("v:color_unicurvature",
-                                                       Color(1.0f, 1.0f, 1.0f));
-    v_color_curvature = mesh.vertex_property<Color>("v:color_curvature",
-                                                    Color(1.0f, 1.0f, 1.0f));
-    v_color_gaussian_curv = mesh.vertex_property<Color>("v:color_gaussian_curv",
-                                                        Color(1.0f, 1.0f, 1.0f));
 
-    auto vertex_valence = mesh.vertex_property<Scalar>("v:valence", 0);
-
-    auto v_uniLaplace = mesh.vertex_property<Scalar>("v:uniLaplace", 0);
-    auto v_curvature = mesh.vertex_property<Scalar>("v:curvature", 0);
-    auto v_gauss_curvature = mesh.vertex_property<Scalar>("v:gauss_curvature", 0);
-
+    computeValence();
     calc_weights();
     calc_uniform_laplacian();
     calc_mean_curvature();
     calc_gauss_curvature();
-    computeValence();
-
-    color_coding(vertex_valence, &mesh, v_color_valence, 100);
-    color_coding(v_uniLaplace, &mesh, v_color_unicurvature);
-    color_coding(v_curvature, &mesh, v_color_curvature);
-    color_coding(v_gauss_curvature, &mesh, v_color_gaussian_curv);
 
     int j = 0;
     MatrixXf mesh_points(3, mesh.n_vertices());
@@ -187,10 +160,6 @@ void Meshiew::meshProcess() {
         ++j;
     }
 
-    MatrixXf color_valence_attrib(3, mesh.n_vertices());
-    MatrixXf color_unicurvature_attrib(3, mesh.n_vertices());
-    MatrixXf color_curvature_attrib(3, mesh.n_vertices());
-    MatrixXf color_gaussian_curv_attrib(3, mesh.n_vertices());
     MatrixXf normals_attrib(3, mesh.n_vertices());
 
     j = 0;
@@ -198,22 +167,6 @@ void Meshiew::meshProcess() {
         mesh_points.col(j) << mesh.position(v).x,
                 mesh.position(v).y,
                 mesh.position(v).z;
-
-        color_valence_attrib.col(j) << v_color_valence[v].x,
-                v_color_valence[v].y,
-                v_color_valence[v].z;
-
-        color_unicurvature_attrib.col(j) << v_color_unicurvature[v].x,
-                v_color_unicurvature[v].y,
-                v_color_unicurvature[v].z;
-
-        color_curvature_attrib.col(j) << v_color_curvature[v].x,
-                v_color_curvature[v].y,
-                v_color_curvature[v].z;
-
-        color_gaussian_curv_attrib.col(j) << v_color_gaussian_curv[v].x,
-                v_color_gaussian_curv[v].y,
-                v_color_gaussian_curv[v].z;
 
         normals_attrib.col(j) << vertex_normal[v].x,
                 vertex_normal[v].y,
@@ -225,10 +178,6 @@ void Meshiew::meshProcess() {
     mShader.bind();
     mShader.uploadIndices(indices);
     mShader.uploadAttrib("position", mesh_points);
-    mShader.uploadAttrib("valence_color", color_valence_attrib);
-    mShader.uploadAttrib("unicurvature_color", color_unicurvature_attrib);
-    mShader.uploadAttrib("curvature_color", color_curvature_attrib);
-    mShader.uploadAttrib("gaussian_curv_color", color_gaussian_curv_attrib);
     mShader.uploadAttrib("normal", normals_attrib);
     mShader.setUniform("color_mode", int(color_mode));
     mShader.setUniform("intensity", base_color);
@@ -239,6 +188,7 @@ void Meshiew::meshProcess() {
     mShaderNormals.uploadAttrib("position", mesh_points);
     mShaderNormals.uploadAttrib("normal", normals_attrib);
     this->mesh_points = mesh_points;
+
 }
 
 void Meshiew::calc_edges_weights() {
@@ -309,6 +259,8 @@ void Meshiew::calc_vertices_weights() {
 }
 
 void Meshiew::computeValence() {
+    selectable_properties.emplace_back("Valence");
+    property_map["Valence"] = "v:valence";
     Surface_mesh::Vertex_property<Scalar> vertex_valence =
             mesh.vertex_property<Scalar>("v:valence", 0);
     for (auto v: mesh.vertices()) {
@@ -332,6 +284,8 @@ void Meshiew::calc_uniform_laplacian() {
 }
 
 void Meshiew::calc_mean_curvature() {
+    selectable_properties.emplace_back("Mean Curvature");
+    property_map["Mean Curvature"] = "v:curvature";
     Surface_mesh::Vertex_property<Scalar> v_curvature = mesh.vertex_property<Scalar>("v:curvature", 0);
     Surface_mesh::Edge_property<Scalar> e_weight = mesh.edge_property<Scalar>("e:weight", 0);
     Surface_mesh::Vertex_property<Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
@@ -349,6 +303,8 @@ void Meshiew::calc_mean_curvature() {
 }
 
 void Meshiew::calc_gauss_curvature() {
+    selectable_properties.emplace_back("Gauss Curvature");
+    property_map["Gauss Curvature"] = "v:gauss_curvature";
     Surface_mesh::Vertex_property<Scalar> v_gauss_curvature = mesh.vertex_property<Scalar>("v:gauss_curvature", 0);
     Surface_mesh::Vertex_property<Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
     Surface_mesh::Vertex_around_vertex_circulator vv_c, vv_c2, vv_end;
@@ -397,6 +353,14 @@ void Meshiew::initModel() {
     }
 
     meshProcess();
+    upload_color("v:valence");
+
+    for (const auto &vprop : mesh.vertex_properties()) {
+        if (vprop[0] == 'v' && vprop[1] == ':') continue;
+        selectable_properties.emplace_back(vprop);
+        property_map[vprop] = vprop;
+    }
+
 }
 
 Point Meshiew::computeCenter(Surface_mesh *mesh) {
@@ -443,8 +407,6 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = PLAIN;
-        this->wireframeBtn->setPushed(true);
-        this->wireframe = true;
     });
 
     b = new Button(c, "Normal");
@@ -452,22 +414,16 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = NORMAL;
-        this->wireframeBtn->setPushed(false);
-        this->wireframe = false;
     });
 
-
-    b = new Button(c, "Valence");
+    b = new Button(c, "Color Coding");
+    b->setPushed(false);
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
-        this->color_mode = VALENCE;
-    });
-    b = new Button(c, "Curvature");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->color_mode = CURVATURE;
+        this->color_mode = COLOR_CODE;
     });
 
+    new Label(c, "Plain & Normal");
     auto colorPoputBtn = new PopupButton(c, "Colors");
     Popup *colorPopup = colorPoputBtn->popup();
     auto *grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
@@ -495,26 +451,11 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         edge_color << c.r(), c.g(), c.b();
     });
 
-    new Label(c, "Curvature Type");
-    popupCurvature = new PopupButton(c, "Curvature Type");
-    Popup *curvPopup = popupCurvature->popup();
-    curvPopup->setLayout(new GroupLayout());
-    new Label(curvPopup, "Curvature Type", "sans-bold");
-    b = new Button(curvPopup, "Uniform Laplacian");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->curvature_type = UNIMEAN;
-    });
-    b = new Button(curvPopup, "Laplace-Beltrami");
-    b->setFlags(Button::RadioButton);
-    b->setCallback([this]() {
-        this->curvature_type = LAPLACEBELTRAMI;
-    });
-    b = new Button(curvPopup, "Gaussian");
-    b->setFlags(Button::RadioButton);
-    b->setPushed(true);
-    b->setCallback([this]() {
-        this->curvature_type = GAUSS;
+    new Label(c, "Color Coding");
+    auto combo = new ComboBox(c, selectable_properties);
+    combo->setCallback([this](int index) {
+        auto prop = property_map[selectable_properties[index]];
+        upload_color(prop);
     });
 
     Window *window = info;
@@ -572,9 +513,12 @@ Vector3f Meshiew::get_model_dimensions() {
 }
 
 void Meshiew::load_from_file(const std::string &filename) {
-    bool success = false;
+    bool success;
     if (has_ending(filename, "msh")) {
         success = loadmsh::load_msh_file(filename, mesh);
+    } else if (filename == "-") {
+        cout << "Loading from stdin" << endl;
+        success = loadmsh::load_msh(std::cin, mesh);
     } else {
         success = mesh.read(filename);
     }
@@ -587,4 +531,28 @@ void Meshiew::load_from_file(const std::string &filename) {
 
 void Meshiew::load(Surface_mesh &mesh) {
     this->mesh = mesh;
+}
+
+void Meshiew::upload_color(const std::string &prop_name) {
+    using namespace surface_mesh;
+    mesh.update_face_normals();
+    mesh.update_vertex_normals();
+    auto color = mesh.vertex_property<Color>("v:color", Color(1, 1, 1));
+    auto prop = mesh.vertex_property<Scalar>(prop_name);
+    color_coding(prop, &mesh, color);
+
+
+    MatrixXf color_mat(3, mesh.n_vertices());
+
+    int j = 0;
+    for (auto v: mesh.vertices()) {
+        color_mat.col(j) << color[v].x,
+                color[v].y,
+                color[v].z;
+        ++j;
+    }
+
+    mShader.bind();
+    mShader.uploadAttrib("colors", color_mat);
+    mShader.setUniform("intensity", base_color);
 }

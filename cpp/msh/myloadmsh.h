@@ -11,6 +11,7 @@
 namespace loadmsh {
 
     bool load_msh_file(const std::string &filename, surface_mesh::Surface_mesh &mesh);
+    bool load_msh(std::istream &fin, surface_mesh::Surface_mesh &mesh);
 
 };
 

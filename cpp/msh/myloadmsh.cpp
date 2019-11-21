@@ -9,15 +9,7 @@
 
 using namespace std;
 
-bool loadmsh::load_msh_file(const std::string &filename, surface_mesh::Surface_mesh &mesh) {
-    std::shared_ptr<PyMesh::MshLoader> loader;
-    try {
-        loader = std::make_shared<PyMesh::MshLoader>(filename);
-    } catch (std::exception &e) {
-        cerr << e.what() << endl;
-        return false;
-    }
-
+bool load(PyMesh::MshLoader *loader, surface_mesh::Surface_mesh &mesh) {
     mesh.clear();
 
     auto vertices = loader->get_nodes().cast<float>();
@@ -36,9 +28,7 @@ bool loadmsh::load_msh_file(const std::string &filename, surface_mesh::Surface_m
         mesh.add_face(face);
     }
 
-    cout << "Mesh has these vertex properties" << endl;
     for (const auto &name : loader->get_node_field_names()) {
-        cout << "\t" << name << endl;
         auto field = loader->get_node_field(name);
         surface_mesh::Surface_mesh::Vertex_property<surface_mesh::Scalar> prop = mesh.vertex_property(name, 0.0f);
         for (const auto &v : mesh.vertices()) {
@@ -46,4 +36,22 @@ bool loadmsh::load_msh_file(const std::string &filename, surface_mesh::Surface_m
         }
     }
     return true;
+
 }
+
+bool loadmsh::load_msh_file(const std::string &filename, surface_mesh::Surface_mesh &mesh) {
+    std::shared_ptr<PyMesh::MshLoader> loader;
+    try {
+        loader = std::make_shared<PyMesh::MshLoader>(filename);
+    } catch (std::exception &e) {
+        cerr << e.what() << endl;
+        return false;
+    }
+    return load(loader.get(), mesh);
+}
+
+bool loadmsh::load_msh(std::istream &fin, surface_mesh::Surface_mesh &mesh) {
+    auto loader = std::make_shared<PyMesh::MshLoader>(fin);
+    return load(loader.get(), mesh);
+}
+

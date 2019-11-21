@@ -10,76 +10,13 @@
 
 using namespace PyMesh;
 
+MshLoader::MshLoader(std::istream &fin) {
+    parse_stream(fin);
+}
+
 MshLoader::MshLoader(const std::string& filename) {
-    std::ifstream fin(filename.c_str(), std::ios::in | std::ios::binary);
-
-    if (!fin.is_open()) {
-        std::stringstream err_msg;
-        err_msg << "failed to open file \"" << filename << "\"";
-        throw IOError(err_msg.str());
-    }
-    // Parse header
-    std::string buf;
-    double version;
-    int type;
-    fin >> buf;
-    if (buf != "$MeshFormat") { throw INVALID_FORMAT; }
-
-    fin >> version >> type >> m_data_size;
-    m_binary = (type == 1);
-
-    // Some sanity check.
-    if (m_data_size != 8) {
-        std::cerr << "Error: data size must be 8 bytes." << std::endl;
-        throw NOT_IMPLEMENTED;
-    }
-    if (sizeof(int) != 4) {
-        std::cerr << "Error: code must be compiled with int size 4 bytes." << std::endl;
-        throw NOT_IMPLEMENTED;
-    }
-
-    // Read in extra info from binary header.
-    if (m_binary) {
-        int one;
-        IOUtils::eat_white_space(fin);
-        fin.read(reinterpret_cast<char*>(&one), sizeof(int));
-        if (one != 1) {
-            std::cerr << "Warning: binary msh file " << filename
-                << " is saved with different endianness than this machine."
-                << std::endl;
-            throw NOT_IMPLEMENTED;
-        }
-    }
-
-    fin >> buf;
-    if (buf != "$EndMeshFormat") { throw NOT_IMPLEMENTED; }
-
-    while (!fin.eof()) {
-        buf.clear();
-        fin >> buf;
-        if (buf == "$Nodes") {
-            parse_nodes(fin);
-            fin >> buf;
-            if (buf != "$EndNodes") { throw INVALID_FORMAT; }
-        } else if (buf == "$Elements") {
-            parse_elements(fin);
-            fin >> buf;
-            if (buf != "$EndElements") { throw INVALID_FORMAT; }
-        } else if (buf == "$NodeData") {
-            parse_node_field(fin);
-            fin >> buf;
-            if (buf != "$EndNodeData") { throw INVALID_FORMAT; }
-        } else if (buf == "$ElementData") {
-            parse_element_field(fin);
-            fin >> buf;
-            if (buf != "$EndElementData") { throw INVALID_FORMAT; }
-        } else if (fin.eof()) {
-            break;
-        } else {
-            parse_unknown_field(fin, buf);
-        }
-    }
-    fin.close();
+    std::ifstream in(filename);
+    parse_stream(in);
 }
 
 MshLoader::FieldNames MshLoader::get_node_field_names() const {
@@ -102,7 +39,7 @@ MshLoader::FieldNames MshLoader::get_element_field_names() const {
     return result;
 }
 
-void MshLoader::parse_nodes(std::ifstream& fin) {
+void MshLoader::parse_nodes(std::istream& fin) {
     size_t num_nodes;
     fin >> num_nodes;
     m_nodes.resize(num_nodes*3);
@@ -136,7 +73,7 @@ void MshLoader::parse_nodes(std::ifstream& fin) {
     }
 }
 
-void MshLoader::parse_elements(std::ifstream& fin) {
+void MshLoader::parse_elements(std::istream& fin) {
     size_t num_elements;
     fin >> num_elements;
 
@@ -271,7 +208,7 @@ void MshLoader::parse_elements(std::ifstream& fin) {
     }
 }
 
-void MshLoader::parse_node_field(std::ifstream& fin) {
+void MshLoader::parse_node_field(std::istream& fin) {
     size_t num_string_tags;
     size_t num_real_tags;
     size_t num_int_tags;
@@ -344,7 +281,7 @@ void MshLoader::parse_node_field(std::ifstream& fin) {
     m_node_fields[fieldname] = field;
 }
 
-void MshLoader::parse_element_field(std::ifstream& fin) {
+void MshLoader::parse_element_field(std::istream& fin) {
     size_t num_string_tags;
     size_t num_real_tags;
     size_t num_int_tags;
@@ -417,7 +354,7 @@ void MshLoader::parse_element_field(std::ifstream& fin) {
     m_element_fields[fieldname] = field;
 }
 
-void MshLoader::parse_unknown_field(std::ifstream& fin,
+void MshLoader::parse_unknown_field(std::istream& fin,
         const std::string& fieldname) {
     std::cerr << "Warning: \"" << fieldname << "\" not supported yet.  Ignored." << std::endl;
     std::string endmark = fieldname.substr(0,1) + "End"
@@ -451,3 +388,70 @@ int MshLoader::num_nodes_per_elem_type(int elem_type) {
     }
     return nodes_per_element;
 }
+
+void MshLoader::parse_stream(std::istream &fin) {
+    // Parse header
+    std::string buf;
+    double version;
+    int type;
+    fin >> buf;
+    if (buf != "$MeshFormat") { throw INVALID_FORMAT; }
+
+    fin >> version >> type >> m_data_size;
+    m_binary = (type == 1);
+
+    // Some sanity check.
+    if (m_data_size != 8) {
+        std::cerr << "Error: data size must be 8 bytes." << std::endl;
+        throw NOT_IMPLEMENTED;
+    }
+    if (sizeof(int) != 4) {
+        std::cerr << "Error: code must be compiled with int size 4 bytes." << std::endl;
+        throw NOT_IMPLEMENTED;
+    }
+
+    // Read in extra info from binary header.
+    if (m_binary) {
+        int one;
+        IOUtils::eat_white_space(fin);
+        fin.read(reinterpret_cast<char*>(&one), sizeof(int));
+        if (one != 1) {
+            std::cerr << "Warning: binary msh file "
+                      << " is saved with different endianness than this machine."
+                      << std::endl;
+            throw NOT_IMPLEMENTED;
+        }
+    }
+
+    fin >> buf;
+    if (buf != "$EndMeshFormat") { throw NOT_IMPLEMENTED; }
+
+    while (!fin.eof()) {
+        buf.clear();
+        fin >> buf;
+        if (buf == "$Nodes") {
+            parse_nodes(fin);
+            fin >> buf;
+            if (buf != "$EndNodes") { throw INVALID_FORMAT; }
+        } else if (buf == "$Elements") {
+            parse_elements(fin);
+            fin >> buf;
+            if (buf != "$EndElements") { throw INVALID_FORMAT; }
+        } else if (buf == "$NodeData") {
+            parse_node_field(fin);
+            fin >> buf;
+            if (buf != "$EndNodeData") { throw INVALID_FORMAT; }
+        } else if (buf == "$ElementData") {
+            parse_element_field(fin);
+            fin >> buf;
+            if (buf != "$EndElementData") { throw INVALID_FORMAT; }
+        } else if (fin.eof()) {
+            break;
+        } else {
+            parse_unknown_field(fin, buf);
+        }
+    }
+
+}
+
+

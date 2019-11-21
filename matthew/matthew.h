@@ -61,8 +61,8 @@ private:
 
     bool demo_mode = false;
 
-    std::vector<nanogui::Window*> windows;
     nanogui::Window* control;
+    nanogui::Window* info;
     CameraParameters mCamera;
     void computeCameraMatrices(Eigen::Matrix4f &model,
                                Eigen::Matrix4f &view,

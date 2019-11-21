@@ -32,7 +32,7 @@ std::string IOUtils::next_line(std::ifstream& fin) {
     return std::string(line);
 }
 
-void IOUtils::eat_white_space(std::ifstream& fin) {
+void IOUtils::eat_white_space(std::istream& fin) {
     char next = fin.peek();
     while (next == '\n' || next == ' ' || next == '\t' || next == '\r') {
         fin.get();

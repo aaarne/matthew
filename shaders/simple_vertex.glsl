@@ -6,10 +6,7 @@ uniform int color_mode;
 uniform vec3 intensity;
 
 in vec3 position;
-in vec3 valence_color;
-in vec3 unicurvature_color;
-in vec3 curvature_color;
-in vec3 gaussian_curv_color;
+in vec3 colors;
 in vec3 normal;
 
 out vec3 fcolor;
@@ -21,13 +18,7 @@ void main() {
     vec4 vpoint_mv = MV * vec4(position, 1.0);
     gl_Position = P * vpoint_mv;
     if (color_mode == 1) {
-        fcolor = valence_color;
-    } else if (color_mode == 2) {
-        fcolor = unicurvature_color;
-    } else if (color_mode == 3) {
-        fcolor = curvature_color;
-    } else if (color_mode == 4) {
-        fcolor = gaussian_curv_color;
+        fcolor = colors;
     } else {
         fcolor = intensity;
     }
