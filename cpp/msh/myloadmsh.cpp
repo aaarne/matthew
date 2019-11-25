@@ -30,9 +30,20 @@ bool load(PyMesh::MshLoader *loader, surface_mesh::Surface_mesh &mesh) {
 
     for (const auto &name : loader->get_node_field_names()) {
         auto field = loader->get_node_field(name);
-        surface_mesh::Surface_mesh::Vertex_property<surface_mesh::Scalar> prop = mesh.vertex_property(name, 0.0f);
-        for (const auto &v : mesh.vertices()) {
-            prop[v] = field(v.idx());
+        int property_dimension = field.rows() / mesh.n_vertices();
+        if (property_dimension == 1) {
+            surface_mesh::Surface_mesh::Vertex_property<surface_mesh::Scalar> prop = mesh.vertex_property(name, 0.0f);
+            for (const auto &v : mesh.vertices()) {
+                prop[v] = field(v.idx());
+            }
+        } else if (property_dimension == 3) {
+            surface_mesh::Surface_mesh::Vertex_property<surface_mesh::Point> prop = mesh.vertex_property(name, surface_mesh::Point(0.0));
+            int j = 0;
+            for (const auto &v : mesh.vertices()) {
+                prop[v] = {static_cast<float>(field(3*v.idx())),
+                           static_cast<float>(field(3*v.idx()+1)),
+                           static_cast<float>(field(3*v.idx()+2))};
+            }
         }
     }
     return true;

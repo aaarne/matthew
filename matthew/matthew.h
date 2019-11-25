@@ -2,6 +2,7 @@
 #include <nanogui/screen.h>
 #include <nanogui/glutil.h>
 #include <memory>
+#include "grid.h"
 
 
 #ifndef MATTHEW_H
@@ -64,7 +65,11 @@ private:
         float modelZoom = 1.0f;
     };
 
+    bool draw_grid = false;
+    float grid_intensity = 0.3;
     bool demo_mode = false;
+    std::shared_ptr<Grid> grid;
+    nanogui::GLShader gridShader;
 
     nanogui::Window* control;
     nanogui::Window* info;

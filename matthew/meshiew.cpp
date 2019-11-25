@@ -369,6 +369,8 @@ Point Meshiew::computeCenter(Surface_mesh *mesh) {
 
 void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *info) {
     using namespace nanogui;
+    auto vp = mesh.vertex_properties();
+    bool mesh_has_color = std::find(vp.begin(), vp.end(), "color") != vp.end();
     Button *b;
 
     new Label(control, "Mesh Graph");
@@ -392,8 +394,9 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         mShader.bind();
         mShader.setUniform("broken_normals", (int)value);
         this->broken_normals = value;
-
     });
+    b->setPushed(true);
+    b->changeCallback()(true);
 
     new Label(control, "Shading");
     auto p = new PopupButton(control, "Color Mode");
@@ -401,7 +404,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     c->setLayout(new GroupLayout());
 
     b = new Button(c, "Normal");
-    b->setPushed(true);
+    b->setPushed(!mesh_has_color);
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = NORMAL;
@@ -413,6 +416,31 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     b->setCallback([this]() {
         this->color_mode = COLOR_CODE;
     });
+
+    b = new Button(c, "Mesh Color Property");
+    b->setPushed(false);
+    b->setFlags(Button::RadioButton);
+    b->setEnabled(mesh_has_color);
+    b->setCallback([this]() {
+        auto color = mesh.get_vertex_property<surface_mesh::Color>("color");
+        MatrixXf color_mat(3, mesh.n_vertices());
+
+        int j = 0;
+        for (auto v: mesh.vertices()) {
+            color_mat.col(j) << color[v].x,
+                    color[v].y,
+                    color[v].z;
+            ++j;
+        }
+
+        mShader.bind();
+        this->color_mode = COLOR_CODE;
+        mShader.uploadAttrib("colors", color_mat);
+    });
+    if (mesh_has_color) {
+        b->setPushed(true);
+        b->callback()();
+    }
 
     new Label(c, "Normal");
     auto colorPoputBtn = new PopupButton(c, "Colors");
@@ -558,10 +586,9 @@ void Meshiew::upload_color(const std::string &prop_name) {
     using namespace surface_mesh;
     mesh.update_face_normals();
     mesh.update_vertex_normals();
-    auto color = mesh.vertex_property<Color>("v:color", Color(1, 1, 1));
+    auto color = mesh.vertex_property<Color>("v:tmp_color_coding", Color(1, 1, 1));
     auto prop = mesh.vertex_property<Scalar>(prop_name);
     color_coding(prop, &mesh, color);
-
 
     MatrixXf color_mat(3, mesh.n_vertices());
 

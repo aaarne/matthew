@@ -27,16 +27,11 @@ void Pointiew::initModel() {
     pcdShader.uploadAttrib("vertexColors", colors);
     pcdShader.setUniform("ext_color", (int)has_color);
 
-    Eigen::Vector3f dim = this->get_model_dimensions();
-    grid = std::make_shared<Grid>(10, max(dim(0), dim(1)), get_model_center());
-    gridShader.bind();
-    gridShader.uploadAttrib("position", grid->get_points());
 }
 
 void Pointiew::initShaders() {
     using namespace shaders;
     pcdShader.init("pcd", point_cloud_verts, point_cloud_frag);
-    gridShader.init("grid", grid_verts, grid_frag);
 }
 
 void Pointiew::create_gui_elements(nanogui::Window *control, nanogui::Window *info) {
@@ -50,21 +45,9 @@ void Pointiew::create_gui_elements(nanogui::Window *control, nanogui::Window *in
     });
     cp->setEnabled(!has_color);
 
-    new Label(control, "Grid");
-    auto chkbox = new CheckBox(control, "Show Grid");
-    chkbox->setChecked(draw_grid);
-    chkbox->setCallback([this](bool value) {
-        this->draw_grid = value;
-    });
-
-    auto *slider = new Slider(control);
-    slider->setValue(0.3);
-    slider->setCallback([this](float value) {
-        this->grid_intensity = value;
-    });
 
     new Label(control, "Point Size");
-    slider = new Slider(control);
+    auto slider = new Slider(control);
     slider->setValue(0.2);
     slider->setCallback([this](float value) {
         this->point_size = std::max(0.1f, 10.0f * value);
@@ -182,13 +165,6 @@ void Pointiew::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
     glPointSize(point_size);
     pcdShader.drawArray(GL_POINTS, 0, n);
 
-    if (draw_grid) {
-        gridShader.bind();
-        gridShader.setUniform("MV", mv);
-        gridShader.setUniform("P", p);
-        gridShader.setUniform("intensity", grid_intensity);
-        gridShader.drawArray(GL_LINES, 0, grid->n());
-    }
 }
 
 

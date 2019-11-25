@@ -7,6 +7,8 @@
 #include <nanogui/label.h>
 #include <iomanip>
 #include <nanogui/textbox.h>
+#include <nanogui/slider.h>
+#include <nanogui/checkbox.h>
 #include "shaders_gen.h"
 #include "meshiew.h"
 #include "pointiew.h"
@@ -42,13 +44,20 @@ Matthew *Matthew::create(const std::string &filename, bool fullscreen) {
 }
 
 void Matthew::run() {
+    gridShader.init("grid", shaders::grid_verts, shaders::grid_frag);
     initShaders();
     initModel();
+
     cam.arcball = nanogui::Arcball();
     cam.arcball.setSize(mSize);
     cam.modelZoom = 2 / get_model_dist_max();
     model_center = get_model_center();
     cam.modelTranslation = -model_center;
+
+    Eigen::Vector3f dim = this->get_model_dimensions();
+    grid = std::make_shared<Grid>(10, max(dim(0), dim(1)), get_model_center());
+    gridShader.bind();
+    gridShader.uploadAttrib("position", grid->get_points());
     initGUI();
 }
 
@@ -149,6 +158,19 @@ void Matthew::initGUI() {
         this->setBackground(c);
     });
 
+    new Label(control, "Grid");
+    auto chkbox = new CheckBox(control, "Show Grid");
+    chkbox->setChecked(draw_grid);
+    chkbox->setCallback([this](bool value) {
+        this->draw_grid = value;
+    });
+
+    auto *slider = new Slider(control);
+    slider->setValue(0.3);
+    slider->setCallback([this](float value) {
+        this->grid_intensity = value;
+    });
+
     info = new Window(this, "Info");
     info->setVisible(false);
     info->setPosition(Vector2i(mFBSize(0) - 300, 15));
@@ -203,7 +225,15 @@ void Matthew::initGUI() {
 void Matthew::drawContents() {
     Eigen::Matrix4f model, view, projection;
     computeCameraMatrices(model, view, projection);
-    draw(view * model, projection);
+    Eigen::Matrix4f mv = view * model;
+    draw(mv, projection);
+    if (draw_grid) {
+        gridShader.bind();
+        gridShader.setUniform("MV", mv);
+        gridShader.setUniform("P", projection);
+        gridShader.setUniform("intensity", grid_intensity);
+        gridShader.drawArray(GL_LINES, 0, grid->n());
+    }
 }
 
 Matthew* Matthew::create(surface_mesh::Surface_mesh &mesh, bool fullscreen) {
