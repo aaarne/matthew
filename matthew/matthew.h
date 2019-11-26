@@ -2,6 +2,7 @@
 #include <nanogui/screen.h>
 #include <nanogui/glutil.h>
 #include <memory>
+#include "grid.h"
 
 
 #ifndef MATTHEW_H
@@ -50,6 +51,8 @@ protected:
 protected:
 
     std::string filename;
+    bool draw_grid = false;
+    float grid_intensity = 0.3;
 
 private:
     struct CameraParameters {
@@ -65,6 +68,8 @@ private:
     };
 
     bool demo_mode = false;
+    std::shared_ptr<Grid> grid;
+    nanogui::GLShader gridShader;
 
     nanogui::Window* control;
     nanogui::Window* info;

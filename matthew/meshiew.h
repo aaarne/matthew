@@ -19,6 +19,7 @@ protected:
     typedef surface_mesh::Surface_mesh Surface_mesh;
     typedef surface_mesh::Scalar Scalar;
     typedef surface_mesh::Point Point;
+    typedef surface_mesh::Surface_mesh::Vertex Vertex;
 
     void load_from_file(const std::string &filename) override;
 
@@ -39,6 +40,8 @@ protected:
     void calc_mean_curvature();
 
     void calc_gauss_curvature();
+
+    void calc_boundary();
 
     void create_gui_elements(nanogui::Window *control, nanogui::Window *info) override;
 
@@ -82,15 +85,18 @@ protected:
     Eigen::Vector3f light_color;
     nanogui::GLShader mShader;
     nanogui::GLShader mShaderNormals;
+    nanogui::GLShader boundaryShader;
 
     Eigen::MatrixXf mesh_points;
     bool normals = false;
     nanogui::PopupButton *popupCurvature;
     nanogui::Window *window;
     bool wireframe = false;
+    bool boundary = false;
     bool broken_normals = false;
-    nanogui::Button *wireframeBtn;
     Surface_mesh mesh;
+
+    int n_boundary_points;
 };
 
 
