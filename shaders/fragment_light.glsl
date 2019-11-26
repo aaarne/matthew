@@ -17,9 +17,7 @@ out vec4 color;
 
 vec3 diffuse(vec3 N, vec3 L)
 {
-    vec3 nrmN = normalize(N);
-    vec3 nrmL = normalize(L);
-    return light_color*fcolor*max(0.0, dot(nrmN, nrmL));
+    return light_color*fcolor*max(0.0, dot(N, L));
 }
 
 vec3 ambient() {

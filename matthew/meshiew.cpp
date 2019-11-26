@@ -466,10 +466,10 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         auto tmp_widget = new Widget(light_model_pp);
         tmp_widget->setLayout(new BoxLayout(Orientation::Horizontal));
         auto slider = new Slider(tmp_widget);
-        slider->setValue(def);
+        slider->setValue(def/2.f);
         slider->setCallback([this,key](float value) {
             mShader.bind();
-            mShader.setUniform(key, value);
+            mShader.setUniform(key, 2.f*value);
         });
     };
 
@@ -561,7 +561,6 @@ void Meshiew::upload_color(const std::string &prop_name) {
     auto color = mesh.vertex_property<Color>("v:color", Color(1, 1, 1));
     auto prop = mesh.vertex_property<Scalar>(prop_name);
     color_coding(prop, &mesh, color);
-
 
     MatrixXf color_mat(3, mesh.n_vertices());
 
