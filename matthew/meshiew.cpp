@@ -4,6 +4,8 @@
 
 #include <shaders_gen.h>
 #include "meshiew.h"
+#include <chrono>
+#include <algorithm>
 #include "myloadmsh.h"
 #include <nanogui/opengl.h>
 #include <nanogui/window.h>
@@ -15,7 +17,11 @@
 #include <nanogui/textbox.h>
 #include <nanogui/combobox.h>
 #include <nanogui/slider.h>
-#include <nanogui/textbox.h>
+#include <numeric>
+
+#define DEFAULT_AMBIENT 0.3
+#define DEFAULT_DIFFUSE 1.0
+#define DEFAULT_SPECULAR 0.0
 
 using namespace std;
 using namespace Eigen;
@@ -67,7 +73,7 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
 
     mShader.setUniform("intensity", base_color);
     mShader.setUniform("light_color", light_color);
-    mShader.setUniform("color_mode", (int)color_mode);
+    mShader.setUniform("color_mode", (int) color_mode);
     mShader.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
 
     if (wireframe) {
@@ -83,6 +89,14 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
         mShaderNormals.setUniform("MV", mv);
         mShaderNormals.setUniform("P", p);
         mShaderNormals.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
+    }
+
+    if (boundary) {
+        boundaryShader.bind();
+        boundaryShader.setUniform("MV", mv);
+        boundaryShader.setUniform("P", p);
+        boundaryShader.setUniform("intensity", grid_intensity);
+        boundaryShader.drawArray(GL_LINES, 0, n_boundary_points);
     }
 }
 
@@ -132,6 +146,7 @@ void Meshiew::meshProcess() {
     calc_uniform_laplacian();
     calc_mean_curvature();
     calc_gauss_curvature();
+    calc_boundary();
 
     int j = 0;
     MatrixXf mesh_points(3, mesh.n_vertices());
@@ -329,6 +344,7 @@ void Meshiew::initShaders() {
     using namespace shaders;
     mShader.init("mesh_shader", simple_vertex, fragment_light);
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
+    boundaryShader.init("boundary_shader", grid_verts, grid_frag);
 }
 
 void Meshiew::initModel() {
@@ -343,10 +359,10 @@ void Meshiew::initModel() {
     meshProcess();
     upload_color("v:valence");
     mShader.bind();
-    mShader.setUniform("broken_normals", (int)false);
-    mShader.setUniform("ambient_term", 0.3f);
-    mShader.setUniform("diffuse_term", 1.0f);
-    mShader.setUniform("specular_term", .5f);
+    mShader.setUniform("broken_normals", (int) false);
+    mShader.setUniform("ambient_term", DEFAULT_AMBIENT);
+    mShader.setUniform("diffuse_term", DEFAULT_DIFFUSE);
+    mShader.setUniform("specular_term", DEFAULT_SPECULAR);
     mShader.setUniform("shininess", 8);
 
     for (const auto &vprop : mesh.vertex_properties()) {
@@ -379,7 +395,12 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     b->setChangeCallback([this](bool wireframe) {
         this->wireframe = wireframe;
     });
-    wireframeBtn = b;
+
+    b = new Button(control, "Boundary");
+    b->setFlags(Button::ToggleButton);
+    b->setChangeCallback([this](bool value) {
+        this->boundary = value;
+    });
 
     new Label(control, "Normals");
     b = new Button(control, "Normals");
@@ -392,7 +413,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     b->setFlags(Button::ToggleButton);
     b->setChangeCallback([this](bool value) {
         mShader.bind();
-        mShader.setUniform("broken_normals", (int)value);
+        mShader.setUniform("broken_normals", (int) value);
         this->broken_normals = value;
     });
     b->setPushed(true);
@@ -495,15 +516,15 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         tmp_widget->setLayout(new BoxLayout(Orientation::Horizontal));
         auto slider = new Slider(tmp_widget);
         slider->setValue(def);
-        slider->setCallback([this,key](float value) {
+        slider->setCallback([this, key](float value) {
             mShader.bind();
             mShader.setUniform(key, value);
         });
     };
 
-    add_slider("Ambient", "ambient_term", 0.3);
-    add_slider("Diffuse", "diffuse_term", 1.0);
-    add_slider("Specular", "specular_term", 0.5);
+    add_slider("Ambient", "ambient_term", DEFAULT_AMBIENT);
+    add_slider("Diffuse", "diffuse_term", DEFAULT_DIFFUSE);
+    add_slider("Specular", "specular_term", DEFAULT_SPECULAR);
 
     new Label(light_model_pp, "Shininess");
     auto box = new IntBox<int>(light_model_pp, 8);
@@ -603,4 +624,67 @@ void Meshiew::upload_color(const std::string &prop_name) {
     mShader.bind();
     mShader.uploadAttrib("colors", color_mat);
     mShader.setUniform("intensity", base_color);
+}
+
+void Meshiew::calc_boundary() {
+    using namespace std::chrono;
+    auto t_start = steady_clock::now();
+    vector<vector<Vertex>> boundary_loops;
+    vector<Vertex> boundary_vertices;
+
+    std::copy_if(mesh.vertices().begin(), mesh.vertices().end(), std::back_inserter(boundary_vertices),
+                 [this](const Vertex &v) {
+                     return mesh.is_boundary(v);
+                 });
+
+    while (!boundary_vertices.empty()) {
+        auto v = boundary_vertices[0];
+        auto v_last = v;
+        auto v_start = v;
+        vector<Vertex> loop = {v};
+        do {
+            for (const auto &h : mesh.halfedges(v)) {
+                bool is_boundary = mesh.is_boundary(h);
+                bool goes_back = mesh.to_vertex(h) == v_last;
+                if (!goes_back && is_boundary) {
+                    v = mesh.to_vertex(h);
+                    loop.push_back(v);
+                    v_last = v;
+                    break;
+                }
+            }
+        } while (v != v_start);
+
+        auto contained_in_current_loop = [loop](const Vertex &v) {
+            return std::find(loop.begin(), loop.end(), v) != loop.end();
+        };
+
+        boundary_vertices.erase(
+                std::remove_if(boundary_vertices.begin(), boundary_vertices.end(), contained_in_current_loop),
+                boundary_vertices.end());
+        boundary_loops.push_back(loop);
+    }
+    cout << "The mesh has " << boundary_loops.size() << " boundary loops." << endl;
+    n_boundary_points = std::accumulate(boundary_loops.begin(), boundary_loops.end(), 0,
+                            [](int acc, const vector<Vertex> &v) -> int {
+                                return acc + 2 * v.size() - 2;
+                            });
+    MatrixXf points(3, n_boundary_points);
+    int j = 0;
+    for (const auto &loop : boundary_loops) {
+        for (int i = 0; i < loop.size() - 1; i++) {
+            auto p1 = mesh.position(loop[i]);
+            auto p2 = mesh.position(loop[i + 1]);
+            points.col(j++) << p1.x,
+                    p1.y,
+                    p1.z;
+            points.col(j++) << p2.x,
+                    p2.y,
+                    p2.z;
+        }
+    }
+    boundaryShader.bind();
+    boundaryShader.uploadAttrib("position", points);
+    cout << "Computing the boundary took " << duration_cast<milliseconds>(steady_clock::now() - t_start).count()
+         << "ms.";
 }

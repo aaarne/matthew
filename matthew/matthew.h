@@ -51,6 +51,8 @@ protected:
 protected:
 
     std::string filename;
+    bool draw_grid = false;
+    float grid_intensity = 0.3;
 
 private:
     struct CameraParameters {
@@ -65,8 +67,6 @@ private:
         float modelZoom = 1.0f;
     };
 
-    bool draw_grid = false;
-    float grid_intensity = 0.3;
     bool demo_mode = false;
     std::shared_ptr<Grid> grid;
     nanogui::GLShader gridShader;

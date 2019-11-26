@@ -10,7 +10,7 @@ using namespace std;
 Grid::Grid(int lines_per_dim, float scale, const Eigen::Vector3f &origin)
         : scale(scale), origin(origin), lines_per_dim(lines_per_dim) {
     int n = lines_per_dim;
-    Eigen::MatrixXf points(3, 4 * n);
+    Eigen::MatrixXf points(3, 4 * n + 6);
     int k = 0;
 
     for (int i = 0; i < n; i++) {
@@ -21,6 +21,12 @@ Grid::Grid(int lines_per_dim, float scale, const Eigen::Vector3f &origin)
         points.col(k++) << -1.0, 2 * float(i) / float(n - 1) - 1.0f, 0.0;
         points.col(k++) << 1.0, 2 * float(i) / float(n - 1) - 1.0f, 0.0;
     }
+    points.col(k++) << 0.95, 0.0, 0.0;
+    points.col(k++) << 1.05, 0.0, 0.0;
+    points.col(k++) << -0.01, 0.95, 0.0;
+    points.col(k++) << -0.01, 1.05, 0.0;
+    points.col(k++) << 0.01, 0.95, 0.0;
+    points.col(k++) << 0.01, 1.05, 0.0;
     points *= scale/2;
     points.colwise() += origin;
     this->points = points;
@@ -31,5 +37,5 @@ Eigen::MatrixXf Grid::get_points() const {
 }
 
 int Grid::n() const {
-    return 4*lines_per_dim;
+    return 4*lines_per_dim + 6;
 }
