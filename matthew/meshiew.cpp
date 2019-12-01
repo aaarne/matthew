@@ -93,10 +93,12 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
 
     if (boundary) {
         boundaryShader.bind();
+        glEnable(GL_LINE_SMOOTH);
         boundaryShader.setUniform("MV", mv);
         boundaryShader.setUniform("P", p);
         boundaryShader.setUniform("intensity", grid_intensity);
         boundaryShader.drawArray(GL_LINES, 0, n_boundary_points);
+        glDisable(GL_LINE_SMOOTH);
     }
 }
 
