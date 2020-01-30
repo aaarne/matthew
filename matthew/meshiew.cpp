@@ -50,6 +50,12 @@ void Meshiew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_m
     std::sort(values.begin(), values.end());
     Scalar min_value = values[i], max_value = values[n - 1 - i];
 
+    cout << "Blue:\t" << min_value + 0.0 / 4.0 * (max_value - min_value) << endl;
+    cout << "Cyan:\t" << min_value + 1.0 / 4.0 * (max_value - min_value) << endl;
+    cout << "Green:\t" << min_value + 2.0 / 4.0 * (max_value - min_value) << endl;
+    cout << "Yellow:\t" << min_value + 3.0 / 4.0 * (max_value - min_value) << endl;
+    cout << "Red:\t" << min_value + 4.0 / 4.0 * (max_value - min_value) << endl;
+
     // map values to colors
     for (auto v: mesh->vertices()) {
         set_color(v, value_to_color(prop[v], min_value, max_value), color_prop);
