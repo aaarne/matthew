@@ -22,6 +22,7 @@
 #define DEFAULT_AMBIENT 0.3
 #define DEFAULT_DIFFUSE 1.0
 #define DEFAULT_SPECULAR 0.0
+#define DEFAULT_OPACITY 1.0
 
 using namespace std;
 using namespace Eigen;
@@ -371,6 +372,7 @@ void Meshiew::initModel() {
     mShader.setUniform("ambient_term", DEFAULT_AMBIENT);
     mShader.setUniform("diffuse_term", DEFAULT_DIFFUSE);
     mShader.setUniform("specular_term", DEFAULT_SPECULAR);
+    mShader.setUniform("opacity", DEFAULT_OPACITY);
     mShader.setUniform("shininess", 8);
 
     for (const auto &vprop : mesh.vertex_properties()) {
@@ -543,6 +545,16 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         mShader.setUniform("shininess", value);
     });
 
+    new Label(light_model_pp, "Opacity");
+    auto w = new Widget(light_model_pp);
+    w->setLayout(new BoxLayout(Orientation::Horizontal));
+    auto slider = new Slider(w);
+    slider->setValue(DEFAULT_OPACITY);
+    slider->setCallback([this](float value) {
+        mShader.bind();
+        mShader.setUniform("opacity", value);
+    });
+
     light_model_pp->setLayout(new GroupLayout());
 
     bool closed = true;
@@ -569,9 +581,7 @@ Meshiew::Meshiew(bool fs) :
         Matthew::Matthew(fs),
         base_color(0, 0.6, 0.15),
         light_color(1, 1, 1),
-        edge_color(0, 0, 0) {
-
-}
+        edge_color(0, 0, 0) {}
 
 Meshiew::~Meshiew() {
     mShader.free();
