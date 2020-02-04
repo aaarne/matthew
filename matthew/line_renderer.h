@@ -8,6 +8,7 @@
 
 #include <nanogui/glutil.h>
 #include <surface_mesh/types.h>
+#include <surface_mesh/Surface_mesh.h>
 
 class LineRenderer {
 public:
@@ -17,7 +18,9 @@ public:
     void init();
     void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p);
 
-    void show_line(std::vector<surface_mesh::Point> &l);
+    void show_lines(std::vector<surface_mesh::Point> &l);
+
+    void show_isolines(const surface_mesh::Surface_mesh &mesh, const std::string &property_name, int n_intervals);
 
 protected:
     void upload_line();
