@@ -95,10 +95,14 @@ protected:
     Surface_mesh mesh;
 
     int n_boundary_points;
-    std::string isoline_prop;
-    int n_isolines = 10;
 
-    LineRenderer line_renderer;
+    struct line_renderer_settings {
+        std::string prop_name;
+        int n_lines;
+    };
+
+    std::vector<LineRenderer*> line_renderers;
+    std::map<LineRenderer*, line_renderer_settings> line_renderer_settings;
 };
 
 

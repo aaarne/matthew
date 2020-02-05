@@ -103,7 +103,9 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
         glDisable(GL_LINE_SMOOTH);
     }
 
-    line_renderer.draw(mv, p);
+    for (const auto &lr : line_renderers) {
+        lr->draw(mv, p);
+    }
 }
 
 surface_mesh::Color Meshiew::value_to_color(Scalar value, Scalar min_value, Scalar max_value) {
@@ -358,8 +360,10 @@ void Meshiew::initShaders() {
     mShader.init("mesh_shader", simple_vertex, fragment_light);
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
     boundaryShader.init("boundary_shader", grid_verts, grid_frag);
-    line_renderer.init();
-    line_renderer.setVisible(false);
+    for (const auto &lr : line_renderers) {
+        lr->init();
+        lr->setVisible(false);
+    }
 }
 
 void Meshiew::initModel() {
@@ -389,7 +393,10 @@ void Meshiew::initModel() {
         property_map[vprop] = vprop;
     }
 
-    this->line_renderer.show_isolines(mesh, "v:id", n_isolines);
+    for (const auto &p : line_renderer_settings) {
+        p.first->show_isolines(mesh, p.second.prop_name, p.second.n_lines);
+    }
+
 }
 
 Point Meshiew::computeCenter(Surface_mesh *mesh) {
@@ -566,31 +573,42 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
 
     light_model_pp->setLayout(new GroupLayout());
 
-    auto line_popup_btn = new PopupButton(control, "Line Renderer");
+    auto line_popup_btn = new PopupButton(control, "Line Renderers");
     auto line_popup = line_popup_btn->popup();
     line_popup->setLayout(new GroupLayout());
 
-    new Label(line_popup, "Line Rendering");
-    auto checkbox = new CheckBox(line_popup, "Enable");
-    checkbox->setCallback([this](bool value) {
-        this->line_renderer.setVisible(value);
-    });
+    int counter = 1;
 
+    for (const auto &lr : line_renderers) {
+        stringstream ss;
+        ss << "Renderer " << counter++;
+        auto inner_popup_btn = new PopupButton(line_popup, ss.str());
+        auto inner_popup = inner_popup_btn->popup();
+        inner_popup->setLayout(new GroupLayout());
 
-    new Label(line_popup, "Isolines");
-    combo = new ComboBox(line_popup, selectable_properties);
-    combo->setCallback([this](int index) {
-        auto prop = property_map[selectable_properties[index]];
-        this->isoline_prop = prop;
-        line_renderer.show_isolines(mesh, isoline_prop, n_isolines);
-    });
+        new Label(inner_popup, "Line Rendering");
+        auto checkbox = new CheckBox(inner_popup, "Enable");
+        checkbox->setCallback([this, lr](bool value) {
+            lr->setVisible(value);
+        });
 
-    auto n_lines_box = new IntBox<int>(line_popup, 10);
-    n_lines_box->setEditable(true);
-    n_lines_box->setCallback([this](int value) {
-        this->n_isolines = value;
-        line_renderer.show_isolines(mesh, isoline_prop, n_isolines);
-    });
+        new Label(inner_popup, "Isolines");
+        auto combo = new ComboBox(inner_popup, selectable_properties);
+        combo->setCallback([this, lr](int index) {
+            auto prop = property_map[selectable_properties[index]];
+            line_renderer_settings[lr].prop_name = prop;
+            lr->show_isolines(mesh, line_renderer_settings[lr].prop_name,
+                              line_renderer_settings[lr].n_lines);
+        });
+
+        auto n_lines_box = new IntBox<int>(inner_popup, line_renderer_settings[lr].n_lines);
+        n_lines_box->setEditable(true);
+        n_lines_box->setCallback([this, lr](int value) {
+            line_renderer_settings[lr].n_lines = value;
+            lr->show_isolines(mesh, line_renderer_settings[lr].prop_name,
+                              line_renderer_settings[lr].n_lines);
+        });
+    }
 
     bool closed = true;
     for (const auto &v : mesh.vertices()) {
@@ -616,12 +634,21 @@ Meshiew::Meshiew(bool fs) :
         Matthew::Matthew(fs),
         base_color(0, 0.6, 0.15),
         light_color(1, 1, 1),
-        edge_color(0, 0, 0) {}
+        edge_color(0, 0, 0) {
+    line_renderers.push_back(new LineRenderer(surface_mesh::Color(1.0, 1.0, 1.0)));
+    line_renderers.push_back(new LineRenderer(surface_mesh::Color(0.0, 0.0, 0.0)));
+
+    for (const auto &lr : line_renderers) {
+        line_renderer_settings[lr].n_lines = 10;
+        line_renderer_settings[lr].prop_name = "v:id";
+    }
+}
 
 Meshiew::~Meshiew() {
     mShader.free();
     mShaderNormals.free();
 }
+
 
 Eigen::Vector3f Meshiew::get_model_center() {
     return {mesh_center.x, mesh_center.y, mesh_center.z};

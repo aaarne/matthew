@@ -12,7 +12,8 @@
 
 class LineRenderer {
 public:
-    LineRenderer() : enabled(true) {}
+    LineRenderer() : LineRenderer(surface_mesh::Color(1.0, 1.0, 1.0)) {}
+    explicit LineRenderer(surface_mesh::Color c) : color(c), enabled(true) {}
 
     void setVisible(bool visible) {this->enabled = visible;}
     void init();
@@ -26,6 +27,7 @@ protected:
     void upload_line();
 
 private:
+    surface_mesh::Color color;
     nanogui::GLShader lineShader;
     bool enabled;
     std::vector<surface_mesh::Point> line;

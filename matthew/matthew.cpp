@@ -53,6 +53,7 @@ void Matthew::run() {
     model_center = get_model_center();
     cam.modelTranslation = -model_center;
 
+
     Eigen::Vector3f dim = this->get_model_dimensions();
     grid = std::make_shared<Grid>(11, max(dim(0), dim(1)), get_model_center());
     gridShader.bind();

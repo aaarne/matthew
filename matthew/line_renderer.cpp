@@ -10,6 +10,10 @@ using namespace surface_mesh;
 
 void LineRenderer::init() {
     lineShader.init("line_shader", shaders::line_shader_verts, shaders::line_shader_frags);
+    lineShader.bind();
+    Eigen::Vector3f line_color;
+    line_color << color.x, color.y, color.z;
+    lineShader.setUniform("line_color", line_color);
 }
 
 
@@ -30,26 +34,31 @@ void LineRenderer::upload_line() {
 
 std::pair<long, long> interval_borders(float a, float b, float l, float size) {
     return {
-        ceilf((std::min(a, b) - l) / size),
-        floorf((std::max(a, b) - l) / size)
+            ceilf((std::min(a, b) - l) / size),
+            floorf((std::max(a, b) - l) / size)
     };
 }
 
-std::pair<Point, Point> create_isoline_segment(const std::pair<long, long> &borders01,
-        const std::pair<long, long> &borders02,
-        const float iso0, const float iso1, const float iso2,
-        const Point &p0, const Point &p1, const Point &p2,
-        float l, float size) {
+long index_of_crossing_border(const std::pair<long, long> &borders01,
+                              const std::pair<long, long> &borders02) {
     for (long index = borders01.first; index <= borders01.second; index++) {
         if (index >= borders02.first && index <= borders02.second) {
-            float ratio1 = (l + index * size - iso0) / (iso1 - iso0);
-            float ratio2 = (l + index * size - iso0) / (iso2 - iso0);
-            return {
-                p0 + (p1 - p0)*ratio1,
-                p0 + (p2 - p0)*ratio2
-            };
+            return index;
         }
     }
+    return -1;
+}
+
+std::pair<Point, Point> create_isoline_segment(long index,
+                                               const float iso0, const float iso1, const float iso2,
+                                               const Point &p0, const Point &p1, const Point &p2,
+                                               float l, float size) {
+    float ratio1 = (l + index * size - iso0) / (iso1 - iso0);
+    float ratio2 = (l + index * size - iso0) / (iso2 - iso0);
+    return {
+            p0 + (p1 - p0) * ratio1,
+            p0 + (p2 - p0) * ratio2
+    };
 }
 
 void LineRenderer::show_isolines(const Surface_mesh &mesh, const std::string &property_name, int n_intervals) {
@@ -71,9 +80,9 @@ void LineRenderer::show_isolines(const Surface_mesh &mesh, const std::string &pr
         triangle_ids.push_back(vv);
     }
 
-    for (auto & triangle_id : triangle_ids) {
+    for (auto &triangle_id : triangle_ids) {
         std::vector<Surface_mesh::Vertex> vv(3);
-        for (long k = 0; k<triangle_id.size(); k++) vv[k] = triangle_id[k];
+        for (long k = 0; k < triangle_id.size(); k++) vv[k] = triangle_id[k];
 
         Scalar iso0, iso1, iso2;
         iso0 = value[vv[0]];
@@ -88,13 +97,24 @@ void LineRenderer::show_isolines(const Surface_mesh &mesh, const std::string &pr
         auto borders12 = interval_borders(iso1, iso2, lb, interval_size);
         auto borders02 = interval_borders(iso0, iso2, lb, interval_size);
 
-        for (const auto &s : {
-                create_isoline_segment(borders01, borders02, iso0, iso1, iso2, v0, v1, v2, lb, interval_size),
-                create_isoline_segment(borders01, borders12, iso1, iso0, iso2, v1, v0, v2, lb, interval_size),
-                create_isoline_segment(borders02, borders12, iso2, iso0, iso1, v2, v0, v1, lb, interval_size),
-        }) {
-            line_segments.emplace_back(s.first);
-            line_segments.emplace_back(s.second);
+        long i1 = index_of_crossing_border(borders01, borders02);
+        long i2 = index_of_crossing_border(borders01, borders12);
+        long i3 = index_of_crossing_border(borders02, borders12);
+
+        if (i1 >= 0) {
+            auto p = create_isoline_segment(i1, iso0, iso1, iso2, v0, v1, v2, lb, interval_size);
+            line_segments.emplace_back(p.first);
+            line_segments.emplace_back(p.second);
+        }
+        if (i2 >= 0) {
+            auto p = create_isoline_segment(i2, iso1, iso0, iso2, v1, v0, v2, lb, interval_size);
+            line_segments.emplace_back(p.first);
+            line_segments.emplace_back(p.second);
+        }
+        if (i3 >= 0) {
+            auto p = create_isoline_segment(i3, iso2, iso0, iso1, v2, v0, v1, lb, interval_size);
+            line_segments.emplace_back(p.first);
+            line_segments.emplace_back(p.second);
         }
     }
 
