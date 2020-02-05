@@ -91,20 +91,20 @@ void LineRenderer::show_isolines(const Surface_mesh &mesh, const std::string &pr
         for (const auto &s : {
                 create_isoline_segment(borders01, borders02, iso0, iso1, iso2, v0, v1, v2, lb, interval_size),
                 create_isoline_segment(borders01, borders12, iso1, iso0, iso2, v1, v0, v2, lb, interval_size),
-                create_isoline_segment(borders02, borders12, iso2, iso0, iso1, v2, v0, v1, lb, interval_size) }) {
+                create_isoline_segment(borders02, borders12, iso2, iso0, iso1, v2, v0, v1, lb, interval_size),
+        }) {
             line_segments.emplace_back(s.first);
             line_segments.emplace_back(s.second);
         }
     }
 
-    this->line = line_segments;
-    upload_line();
+    show_lines(line_segments);
 }
 
 void LineRenderer::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
     if (this->enabled) {
         glEnable(GL_LINE_SMOOTH);
-        glLineWidth(2.0);
+        glLineWidth(1.0);
         lineShader.bind();
         lineShader.setUniform("MV", mv);
         lineShader.setUniform("P", p);
