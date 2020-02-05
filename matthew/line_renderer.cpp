@@ -62,6 +62,9 @@ std::pair<Point, Point> create_isoline_segment(long index,
 }
 
 void LineRenderer::show_isolines(const Surface_mesh &mesh, const std::string &property_name, int n_intervals) {
+    /*
+     * Warning: Close your eyes! Ugly code ahead
+     */
     auto value = mesh.get_vertex_property<Scalar>(property_name);
     auto p = value.vector();
     float lb = *std::min_element(p.begin(), p.end());
