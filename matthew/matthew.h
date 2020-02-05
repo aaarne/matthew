@@ -56,6 +56,7 @@ protected:
     bool draw_grid = false;
     float grid_intensity = 0.3;
     std::string additional_data_folder = "";
+    Eigen::Vector3f model_center;
 
 private:
     struct CameraParameters {
@@ -81,7 +82,6 @@ private:
                                Eigen::Matrix4f &view,
                                Eigen::Matrix4f &proj);
 
-    Eigen::Vector3f model_center;
     bool keyboardEvent(int key, int scancode, int action, int modifiers) override;
 
     void draw(NVGcontext *ctx) override;

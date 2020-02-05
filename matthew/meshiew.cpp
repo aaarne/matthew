@@ -369,6 +369,7 @@ void Meshiew::initShaders() {
 
 void Meshiew::initModel() {
     mesh_center = computeCenter(&mesh);
+    cout << "Mesh center is at: " << mesh_center << endl;
     dist_max = 0.0f;
     for (auto v: mesh.vertices()) {
         if (distance(mesh_center, mesh.position(v)) > dist_max) {
@@ -622,7 +623,13 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         combo->setCallback([this, lr, trajectory_files](int index) {
             auto filename = trajectory_files[index];
             line_renderer_settings[lr].show_raw_data = true;
-            lr->show_line(trajectory_reader::read(filename, true));
+            vector<Point> points;
+            for (const auto &p : trajectory_reader::read(filename, true)) {
+                points.emplace_back(p.x + model_center.x(),
+                                    p.y + model_center.y(),
+                                    p.z + model_center.z());
+            }
+            lr->show_line(points);
         });
 
         new Label(inner_popup, "Line Color");
