@@ -7,6 +7,7 @@
 #include <chrono>
 #include <algorithm>
 #include "myloadmsh.h"
+#include "trajectory_reader.h"
 #include <nanogui/opengl.h>
 #include <nanogui/window.h>
 #include <nanogui/layout.h>
@@ -579,6 +580,8 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
 
     int counter = 1;
 
+    auto trajectory_files = this->additional_data_files("traj");
+
     for (const auto &lr : line_renderers) {
         stringstream ss;
         ss << "Renderer " << counter++;
@@ -597,6 +600,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         combo->setCallback([this, lr](int index) {
             auto prop = property_map[selectable_properties[index]];
             line_renderer_settings[lr].prop_name = prop;
+            line_renderer_settings[lr].show_raw_data = false;
             lr->show_isolines(mesh, line_renderer_settings[lr].prop_name,
                               line_renderer_settings[lr].n_lines);
         });
@@ -607,6 +611,28 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             line_renderer_settings[lr].n_lines = value;
             lr->show_isolines(mesh, line_renderer_settings[lr].prop_name,
                               line_renderer_settings[lr].n_lines);
+        });
+
+        new Label(inner_popup, "Trajectories");
+        combo = new ComboBox(inner_popup, trajectory_files);
+        if (trajectory_files.empty()) {
+            combo->setEnabled(false);
+            combo->setCaption("No Data");
+        }
+        combo->setCallback([this, lr, trajectory_files](int index) {
+            auto filename = trajectory_files[index];
+            line_renderer_settings[lr].show_raw_data = true;
+            lr->show_line(trajectory_reader::read(filename, true));
+        });
+
+        new Label(inner_popup, "Line Color");
+        auto cp = new ColorPicker(inner_popup, line_renderer_settings[lr].color);
+        cp->setFixedSize({100, 20});
+        cp->setCallback([this, lr](const Color &c) {
+            line_renderer_settings[lr].color.x() = c.r();
+            line_renderer_settings[lr].color.y() = c.g();
+            line_renderer_settings[lr].color.z() = c.b();
+            lr->setColor(surface_mesh::Color(c.r(), c.g(), c.b()));
         });
     }
 
@@ -635,12 +661,18 @@ Meshiew::Meshiew(bool fs) :
         base_color(0, 0.6, 0.15),
         light_color(1, 1, 1),
         edge_color(0, 0, 0) {
-    line_renderers.push_back(new LineRenderer(surface_mesh::Color(1.0, 1.0, 1.0)));
-    line_renderers.push_back(new LineRenderer(surface_mesh::Color(0.0, 0.0, 0.0)));
+
+    line_renderers = {
+            new LineRenderer(surface_mesh::Color(1.0, 1.0, 1.0)),
+            new LineRenderer(surface_mesh::Color(0.0, 0.0, 0.0)),
+            new LineRenderer(surface_mesh::Color(1.0, 0.0, 0.0)),
+    };
 
     for (const auto &lr : line_renderers) {
         line_renderer_settings[lr].n_lines = 10;
         line_renderer_settings[lr].prop_name = "v:id";
+        auto c = lr->getColor();
+        line_renderer_settings[lr].color << c.x, c.y, c.z;
     }
 }
 

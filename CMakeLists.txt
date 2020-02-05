@@ -14,6 +14,7 @@ find_package(SurfaceMesh)
 
 add_definitions(${NANOGUI_EXTRA_DEFS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/externals/cli)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/externals/csv)
 
 # Deploy files once to the executable dir
 macro(copy_files_once)

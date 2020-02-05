@@ -11,6 +11,7 @@
 #include "shaders_gen.h"
 #include "meshiew.h"
 #include "pointiew.h"
+#include "dirent.h"
 
 using namespace std;
 using namespace Eigen;
@@ -40,6 +41,29 @@ Matthew *Matthew::create(const std::string &filename, bool fullscreen) {
     matthew->load_from_file(filename);
     matthew->filename = filename;
     return matthew;
+}
+
+vector<string> files_in_directory(const string& dir) {
+    vector<string> files;
+    shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
+    struct dirent *dirent_ptr;
+    if (!directory_ptr) {
+        cerr << "Error opening " << dir << ": " << strerror(errno) << " " << dir << endl;
+        return files;
+    }
+
+    while ((dirent_ptr = readdir(directory_ptr.get())) != nullptr) {
+        files.emplace_back(dir + "/" + dirent_ptr->d_name);
+    }
+    return files;
+}
+
+bool has_ending(std::string const &fullString, std::string const &ending) {
+    if (fullString.length() >= ending.length()) {
+        return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+    } else {
+        return false;
+    }
 }
 
 void Matthew::run() {
@@ -260,6 +284,18 @@ Matthew* Matthew::create(Eigen::VectorXf &points, Eigen::VectorXf &colors, bool 
 bool Matthew::resizeEvent(const Vector2i &i) {
     cam.arcball.setSize(i);
     return true;
+}
+
+std::vector<std::string> Matthew::additional_data_files(const string &ending) const {
+    std::vector<std::string> filenames;
+    if (this->additional_data_folder.empty()) {
+        return filenames;
+    }
+    auto found = files_in_directory(additional_data_folder);
+
+    std::copy_if(found.begin(), found.end(), std::back_inserter(filenames),
+            [ending](const std::string &s) {return has_ending(s, ending);});
+    return filenames;
 }
 
 void matthew::run_app(Matthew *matt) {

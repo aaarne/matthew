@@ -7,6 +7,7 @@
 #include <cmath>
 
 using namespace surface_mesh;
+using namespace std;
 
 void LineRenderer::init() {
     lineShader.init("line_shader", shaders::line_shader_verts, shaders::line_shader_frags);
@@ -17,8 +18,9 @@ void LineRenderer::init() {
 }
 
 
-void LineRenderer::show_lines(std::vector<Point> &l) {
+void LineRenderer::show_line_segments(const std::vector<Point> &l) {
     this->line = l;
+    this->strip_mode = false;
     upload_line();
 }
 
@@ -121,7 +123,7 @@ void LineRenderer::show_isolines(const Surface_mesh &mesh, const std::string &pr
         }
     }
 
-    show_lines(line_segments);
+    show_line_segments(line_segments);
 }
 
 void LineRenderer::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
@@ -131,7 +133,21 @@ void LineRenderer::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
         lineShader.bind();
         lineShader.setUniform("MV", mv);
         lineShader.setUniform("P", p);
-        lineShader.drawArray(GL_LINES, 0, line.size());
+        lineShader.drawArray((strip_mode) ? GL_LINE_STRIP : GL_LINES, 0, line.size());
         glDisable(GL_LINE_SMOOTH);
     }
+}
+
+void LineRenderer::setColor(const surface_mesh::Color &c) {
+    this->color = c;
+    lineShader.bind();
+    Eigen::Vector3f line_color;
+    line_color << color.x, color.y, color.z;
+    lineShader.setUniform("line_color", line_color);
+}
+
+void LineRenderer::show_line(const std::vector<surface_mesh::Point> &l) {
+    this->line = l;
+    this->strip_mode = true;
+    upload_line();
 }

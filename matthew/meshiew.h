@@ -97,8 +97,10 @@ protected:
     int n_boundary_points;
 
     struct line_renderer_settings {
+        bool show_raw_data;
         std::string prop_name;
         int n_lines;
+        Eigen::Vector3f color;
     };
 
     std::vector<LineRenderer*> line_renderers;

@@ -21,6 +21,7 @@ public:
     static Matthew *create(Eigen::VectorXf &points, Eigen::VectorXf &colors, bool fullscreen= false);
     static Matthew *create(Eigen::VectorXf &points, bool fullscreen= false);
 
+    void setAdditionalDatafolder(const std::string &s) {additional_data_folder = s;}
 
 protected:
 
@@ -47,12 +48,14 @@ protected:
 
     virtual Eigen::Vector3f get_model_dimensions() = 0;
 
+    std::vector<std::string> additional_data_files(const std::string &ending) const;
 
 protected:
 
     std::string filename;
     bool draw_grid = false;
     float grid_intensity = 0.3;
+    std::string additional_data_folder = "";
 
 private:
     struct CameraParameters {
