@@ -5,7 +5,6 @@
 #include <nanogui/layout.h>
 #include <nanogui/colorpicker.h>
 #include <nanogui/label.h>
-#include <iomanip>
 #include <nanogui/textbox.h>
 #include <nanogui/slider.h>
 #include <nanogui/checkbox.h>

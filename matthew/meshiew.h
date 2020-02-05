@@ -6,6 +6,7 @@
 #define MATTHEW_MESH_PROCESSING_H
 
 #include "matthew.h"
+#include "line_renderer.h"
 
 class Meshiew : public Matthew {
     friend class Matthew;
@@ -62,15 +63,12 @@ protected:
     void color_coding(Surface_mesh::Vertex_property <Scalar> prop, Surface_mesh *mesh,
                       Surface_mesh::Vertex_property <surface_mesh::Color> color_prop, int bound = 20);
 
-    static void set_color(Surface_mesh::Vertex v, const surface_mesh::Color &col,
-                          Surface_mesh::Vertex_property <surface_mesh::Color> color_prop);
-
     surface_mesh::Color value_to_color(Scalar value, Scalar min_value, Scalar max_value);
 
     void upload_color(const std::string &prop_name);
 
     enum COLOR_MODE : int {
-        NORMAL = 0, COLOR_CODE = 1, PLAIN = 2
+        NORMAL = 0, COLOR_CODE = 1
     };
 
     Point mesh_center;
@@ -97,6 +95,10 @@ protected:
     Surface_mesh mesh;
 
     int n_boundary_points;
+    std::string isoline_prop;
+    int n_isolines = 10;
+
+    LineRenderer line_renderer;
 };
 
 

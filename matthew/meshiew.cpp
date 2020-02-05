@@ -22,6 +22,7 @@
 #define DEFAULT_AMBIENT 0.3
 #define DEFAULT_DIFFUSE 1.0
 #define DEFAULT_SPECULAR 0.0
+#define DEFAULT_OPACITY 1.0
 
 using namespace std;
 using namespace Eigen;
@@ -33,11 +34,6 @@ using surface_mesh::Point;
 void Meshiew::calc_weights() {
     calc_edges_weights();
     calc_vertices_weights();
-}
-
-void Meshiew::set_color(Surface_mesh::Vertex v, const surface_mesh::Color &col,
-                        Surface_mesh::Vertex_property<surface_mesh::Color> color_prop) {
-    color_prop[v] = col;
 }
 
 void Meshiew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_mesh *mesh,
@@ -58,7 +54,7 @@ void Meshiew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_m
 
     // map values to colors
     for (auto v: mesh->vertices()) {
-        set_color(v, value_to_color(prop[v], min_value, max_value), color_prop);
+        color_prop[v] = value_to_color(prop[v], min_value, max_value);
     }
 }
 
@@ -106,6 +102,8 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
         boundaryShader.drawArray(GL_LINES, 0, n_boundary_points);
         glDisable(GL_LINE_SMOOTH);
     }
+
+    line_renderer.draw(mv, p);
 }
 
 surface_mesh::Color Meshiew::value_to_color(Scalar value, Scalar min_value, Scalar max_value) {
@@ -274,8 +272,15 @@ void Meshiew::computeValence() {
     property_map["Valence"] = "v:valence";
     Surface_mesh::Vertex_property<Scalar> vertex_valence =
             mesh.vertex_property<Scalar>("v:valence", 0);
-    for (auto v: mesh.vertices()) {
+    for (const auto &v: mesh.vertices()) {
         vertex_valence[v] = mesh.valence(v);
+    }
+
+    selectable_properties.emplace_back("ID");
+    property_map["ID"] = "v:id";
+    Surface_mesh::Vertex_property<Scalar> vv = mesh.vertex_property<Scalar>("v:id", 0);
+    for (const auto &v : mesh.vertices()) {
+        vv[v] = v.idx();
     }
 }
 
@@ -353,6 +358,8 @@ void Meshiew::initShaders() {
     mShader.init("mesh_shader", simple_vertex, fragment_light);
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
     boundaryShader.init("boundary_shader", grid_verts, grid_frag);
+    line_renderer.init();
+    line_renderer.setVisible(false);
 }
 
 void Meshiew::initModel() {
@@ -371,14 +378,18 @@ void Meshiew::initModel() {
     mShader.setUniform("ambient_term", DEFAULT_AMBIENT);
     mShader.setUniform("diffuse_term", DEFAULT_DIFFUSE);
     mShader.setUniform("specular_term", DEFAULT_SPECULAR);
+    mShader.setUniform("opacity", DEFAULT_OPACITY);
     mShader.setUniform("shininess", 8);
 
+    cout << "Mesh has these vertex properties:" << endl;
     for (const auto &vprop : mesh.vertex_properties()) {
+        cout << "\t- " << vprop << endl;
         if (vprop[0] == 'v' && vprop[1] == ':') continue;
         selectable_properties.emplace_back(vprop);
         property_map[vprop] = vprop;
     }
 
+    this->line_renderer.show_isolines(mesh, "v:id", n_isolines);
 }
 
 Point Meshiew::computeCenter(Surface_mesh *mesh) {
@@ -523,10 +534,10 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         auto tmp_widget = new Widget(light_model_pp);
         tmp_widget->setLayout(new BoxLayout(Orientation::Horizontal));
         auto slider = new Slider(tmp_widget);
-        slider->setValue(def/2.f);
+        slider->setValue(def / 2.f);
         slider->setCallback([this, key](float value) {
             mShader.bind();
-            mShader.setUniform(key, 2.f*value);
+            mShader.setUniform(key, 2.f * value);
         });
     };
 
@@ -543,7 +554,43 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         mShader.setUniform("shininess", value);
     });
 
+    new Label(light_model_pp, "Opacity");
+    auto w = new Widget(light_model_pp);
+    w->setLayout(new BoxLayout(Orientation::Horizontal));
+    auto slider = new Slider(w);
+    slider->setValue(DEFAULT_OPACITY);
+    slider->setCallback([this](float value) {
+        mShader.bind();
+        mShader.setUniform("opacity", value);
+    });
+
     light_model_pp->setLayout(new GroupLayout());
+
+    auto line_popup_btn = new PopupButton(control, "Line Renderer");
+    auto line_popup = line_popup_btn->popup();
+    line_popup->setLayout(new GroupLayout());
+
+    new Label(line_popup, "Line Rendering");
+    auto checkbox = new CheckBox(line_popup, "Enable");
+    checkbox->setCallback([this](bool value) {
+        this->line_renderer.setVisible(value);
+    });
+
+
+    new Label(line_popup, "Isolines");
+    combo = new ComboBox(line_popup, selectable_properties);
+    combo->setCallback([this](int index) {
+        auto prop = property_map[selectable_properties[index]];
+        this->isoline_prop = prop;
+        line_renderer.show_isolines(mesh, isoline_prop, n_isolines);
+    });
+
+    auto n_lines_box = new IntBox<int>(line_popup, 10);
+    n_lines_box->setEditable(true);
+    n_lines_box->setCallback([this](int value) {
+        this->n_isolines = value;
+        line_renderer.show_isolines(mesh, isoline_prop, n_isolines);
+    });
 
     bool closed = true;
     for (const auto &v : mesh.vertices()) {
@@ -569,9 +616,7 @@ Meshiew::Meshiew(bool fs) :
         Matthew::Matthew(fs),
         base_color(0, 0.6, 0.15),
         light_color(1, 1, 1),
-        edge_color(0, 0, 0) {
-
-}
+        edge_color(0, 0, 0) {}
 
 Meshiew::~Meshiew() {
     mShader.free();
@@ -674,9 +719,9 @@ void Meshiew::calc_boundary() {
     }
     cout << "The mesh has " << boundary_loops.size() << " boundary loops." << endl;
     n_boundary_points = std::accumulate(boundary_loops.begin(), boundary_loops.end(), 0,
-                            [](int acc, const vector<Vertex> &v) -> int {
-                                return acc + 2 * v.size() - 2;
-                            });
+                                        [](int acc, const vector<Vertex> &v) -> int {
+                                            return acc + 2 * v.size() - 2;
+                                        });
     MatrixXf points(3, n_boundary_points);
     int j = 0;
     for (const auto &loop : boundary_loops) {

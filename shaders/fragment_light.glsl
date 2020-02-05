@@ -5,6 +5,7 @@ uniform vec3 light_color;
 uniform float ambient_term;
 uniform float diffuse_term;
 uniform float specular_term;
+uniform float opacity;
 uniform bool broken_normals;
 uniform int shininess;
 
@@ -47,6 +48,6 @@ void main() {
         + specular_term * specular(N, V, light_pos);
     }
 
-    color = vec4(result, 1.0);
+    color = vec4(result, opacity);
 }
 
