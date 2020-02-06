@@ -39,6 +39,8 @@ protected:
 
     void initGUI();
 
+    virtual void get_ready_to_run() {};
+
     virtual void initShaders() = 0;
 
     virtual void create_gui_elements(nanogui::Window *window, nanogui::Window *info) = 0;

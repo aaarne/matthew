@@ -83,6 +83,7 @@ void Matthew::run() {
     gridShader.bind();
     gridShader.uploadAttrib("position", grid->get_points());
     initGUI();
+    get_ready_to_run();
 }
 
 bool Matthew::keyboardEvent(int key, int scancode, int action, int modifiers) {

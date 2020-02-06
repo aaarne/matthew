@@ -107,6 +107,10 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     for (const auto &lr : line_renderers) {
         lr->draw(mv, p);
     }
+
+    for (const auto &pr : point_renderers) {
+        pr->draw(mv, p);
+    }
 }
 
 surface_mesh::Color Meshiew::value_to_color(Scalar value, Scalar min_value, Scalar max_value) {
@@ -365,6 +369,9 @@ void Meshiew::initShaders() {
         lr->init();
         lr->setVisible(false);
     }
+    for (const auto &pr : point_renderers) {
+        pr->init();
+    }
 }
 
 void Meshiew::initModel() {
@@ -622,14 +629,27 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         }
         combo->setCallback([this, lr, trajectory_files](int index) {
             auto filename = trajectory_files[index];
+            line_renderer_settings[lr].point_trace_mode = false;
             line_renderer_settings[lr].show_raw_data = true;
             vector<Point> points;
             for (const auto &p : trajectory_reader::read(filename, true)) {
-                points.emplace_back(p.x + model_center.x(),
-                                    p.y + model_center.y(),
-                                    p.z + model_center.z());
+                points.emplace_back(p.x, p.y, p.z);
             }
             lr->show_line(points);
+        });
+
+        new Label(inner_popup, "Point Renderer Traces");
+        std::vector<string> renderer_names;
+        int counter = 1;
+        for (const auto &pr : point_renderers) {
+            stringstream ss; ss << "Renderer " << counter++;
+            renderer_names.push_back(ss.str());
+        }
+        combo = new ComboBox(inner_popup, renderer_names);
+        combo->setCallback([this, lr](int index) {
+            line_renderer_settings[lr].point_trace_mode = true;
+            line_renderer_settings[lr].show_raw_data = false;
+            lr->show_line(point_renderers[index]->trace());
         });
 
         new Label(inner_popup, "Line Color");
@@ -681,6 +701,10 @@ Meshiew::Meshiew(bool fs) :
         auto c = lr->getColor();
         line_renderer_settings[lr].color << c.x, c.y, c.z;
     }
+
+    point_renderers = {
+            new PointRenderer(),
+    };
 }
 
 Meshiew::~Meshiew() {
@@ -806,4 +830,19 @@ void Meshiew::calc_boundary() {
     boundaryShader.uploadAttrib("position", points);
     cout << "Computing the boundary took " << duration_cast<milliseconds>(steady_clock::now() - t_start).count()
          << "ms.";
+}
+
+void Meshiew::get_ready_to_run() {
+    receiver = new SimulinkReceiver("localhost", 2222);
+
+    t.setInterval([this]() {
+        auto values = receiver->read_doubles(3);
+        for (const auto &pr : point_renderers) {
+            surface_mesh::Point p(
+                    values[0],
+                    values[1],
+                    values[2]);
+            pr->setPoint(p);
+        }
+    }, 0);
 }

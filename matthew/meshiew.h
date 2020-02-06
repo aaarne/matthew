@@ -5,6 +5,9 @@
 #ifndef MATTHEW_MESH_PROCESSING_H
 #define MATTHEW_MESH_PROCESSING_H
 
+#include <point_renderer.h>
+#include <timercpp.h>
+#include <simulink_receiver.h>
 #include "matthew.h"
 #include "line_renderer.h"
 
@@ -31,6 +34,8 @@ protected:
     void calc_weights();
 
     void calc_edges_weights();
+
+    void get_ready_to_run() override;
 
     void calc_vertices_weights();
 
@@ -101,10 +106,17 @@ protected:
         std::string prop_name;
         int n_lines;
         Eigen::Vector3f color;
+        bool point_trace_mode;
+        int point_renderer_id;
     };
 
     std::vector<LineRenderer*> line_renderers;
     std::map<LineRenderer*, line_renderer_settings> line_renderer_settings;
+
+    std::vector<PointRenderer*> point_renderers;
+
+    Timer t;
+    SimulinkReceiver *receiver;
 };
 
 

@@ -7,13 +7,8 @@ add_library(sockpp OBJECT
         src/inet6_address.cpp
         src/socket.cpp
         src/stream_socket.cpp
+        src/unix/unix_address.cpp
         )
 
 target_include_directories(sockpp PUBLIC include)
-
-if(UNIX)
-    target_sources(sockpp PUBLIC
-            src/unix/unix_address.cpp
-            )
-endif()
 

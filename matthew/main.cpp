@@ -1,4 +1,5 @@
 #include <fstream>
+#include <simulink_receiver.h>
 #include "matthew.h"
 #include "CLI11.hpp"
 
