@@ -41,3 +41,7 @@ void PointRenderer::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
     glPointSize(10.0f);
     shader.drawArray(GL_POINTS, 0, 1);
 }
+
+void PointRenderer::clear() {
+    points.clear();
+}

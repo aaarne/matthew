@@ -19,6 +19,7 @@ public:
     void addPoint(const surface_mesh::Point &p);
 
     bool is_initialized() const {return this->initialized; }
+    void clear();
 
     std::vector<surface_mesh::Point> trace() const;
 

@@ -660,7 +660,8 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         std::vector<string> renderer_names;
         int counter = 1;
         for (const auto &pr : point_renderers) {
-            stringstream ss; ss << "Renderer " << counter++;
+            stringstream ss;
+            ss << "Renderer " << counter++;
             renderer_names.push_back(ss.str());
         }
         combo = new ComboBox(inner_popup, renderer_names);
@@ -680,6 +681,24 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             lr->setColor(surface_mesh::Color(c.r(), c.g(), c.b()));
         });
     }
+
+    auto pr_popup_btn = new PopupButton(control, "Point Renderers");
+    auto pp = pr_popup_btn->popup();
+    pp->setLayout(new GroupLayout());
+
+    counter = 1;
+    for (const auto &pr : point_renderers) {
+        stringstream ss;
+        ss << "Point Renderer " << counter++;
+        auto btn = new PopupButton(pp, ss.str());
+        btn->popup()->setLayout(new GroupLayout());
+
+        auto b = new Button(btn->popup(), "Clear Trace");
+        b->setCallback([this, pr]() {
+            pr->clear();
+        });
+    }
+
 
     bool closed = true;
     for (const auto &v : mesh.vertices()) {
