@@ -1,1 +1,2 @@
-add_subdirectory(msh)
+add_subdirectory(io)
+add_subdirectory(lines)

@@ -30,7 +30,7 @@ bool Matthew::has_ending(std::string const &fullString, std::string const &endin
 
 Matthew *Matthew::create(const std::string &filename, bool fullscreen) {
     Matthew *matthew;
-    vector<string> mshtypes = {"obj", "off", "stl", "msh"};
+    vector<string> mshtypes = {"obj", "off", "stl", "io"};
     if (has_ending(filename, "pcd")) {
         matthew = new Pointiew(fullscreen);
     } else if ((filename == "-") || std::any_of(mshtypes.begin(), mshtypes.end(), [&](string ending) {return has_ending(filename, ending);})) {

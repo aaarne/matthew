@@ -703,7 +703,7 @@ Vector3f Meshiew::get_model_dimensions() {
 
 void Meshiew::load_from_file(const std::string &filename) {
     bool success;
-    if (has_ending(filename, "msh")) {
+    if (has_ending(filename, "io")) {
         success = loadmsh::load_msh_file(filename, mesh);
     } else if (filename == "-") {
         cout << "Loading from stdin" << endl;

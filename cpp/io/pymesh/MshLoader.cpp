@@ -174,7 +174,7 @@ void MshLoader::parse_elements(std::istream& fin) {
             for (size_t j=0; j<nodes_per_element; j++) {
                 int idx;
                 fin >> idx;
-                elements.push_back(idx-1); // msh index starts from 1.
+                elements.push_back(idx-1); // io index starts from 1.
             }
         }
     }
@@ -416,7 +416,7 @@ void MshLoader::parse_stream(std::istream &fin) {
         IOUtils::eat_white_space(fin);
         fin.read(reinterpret_cast<char*>(&one), sizeof(int));
         if (one != 1) {
-            std::cerr << "Warning: binary msh file "
+            std::cerr << "Warning: binary io file "
                       << " is saved with different endianness than this machine."
                       << std::endl;
             throw NOT_IMPLEMENTED;
