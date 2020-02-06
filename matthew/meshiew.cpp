@@ -361,10 +361,15 @@ void Meshiew::calc_gauss_curvature() {
 }
 
 void Meshiew::initShaders() {
+    using namespace shaders;
     line_renderers = {
             new LineRenderer(model_center, surface_mesh::Color(1.0, 1.0, 1.0)),
             new LineRenderer(model_center, surface_mesh::Color(0.0, 0.0, 0.0)),
             new LineRenderer(model_center, surface_mesh::Color(1.0, 0.0, 0.0)),
+    };
+
+    point_renderers = {
+            new PointRenderer(model_center),
     };
 
     for (const auto &lr : line_renderers) {
@@ -376,10 +381,10 @@ void Meshiew::initShaders() {
         line_renderer_settings[lr].point_renderer_id = 0;
     }
 
-    point_renderers = {
-            new PointRenderer(model_center),
-    };
-    using namespace shaders;
+    for (const auto &pr : point_renderers) {
+        pr->setEnabled(false);
+    }
+
     mShader.init("mesh_shader", simple_vertex, fragment_light);
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
     boundaryShader.init("boundary_shader", grid_verts, grid_frag);
@@ -443,34 +448,18 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     Button *b;
 
     new Label(control, "Mesh Graph");
-    b = new Button(control, "Wireframe");
-    b->setFlags(Button::ToggleButton);
-    b->setChangeCallback([this](bool wireframe) {
+    (new CheckBox(control, "Wireframe"))->setCallback([this](bool wireframe) {
         this->wireframe = wireframe;
     });
 
-    b = new Button(control, "Boundary");
-    b->setFlags(Button::ToggleButton);
-    b->setChangeCallback([this](bool value) {
+    (new CheckBox(control, "Boundary"))->setCallback([this](bool value) {
         this->boundary = value;
     });
 
-    new Label(control, "Normals");
-    b = new Button(control, "Normals");
-    b->setFlags(Button::ToggleButton);
-    b->setChangeCallback([this](bool normals) {
+    (new CheckBox(control, "Normals"))->setCallback([this](bool normals) {
         this->normals = !this->normals;
     });
 
-    b = new Button(control, "Broken Normals");
-    b->setFlags(Button::ToggleButton);
-    b->setChangeCallback([this](bool value) {
-        mShader.bind();
-        mShader.setUniform("broken_normals", (int) value);
-        this->broken_normals = value;
-    });
-    b->setPushed(true);
-    b->changeCallback()(true);
 
     new Label(control, "Shading");
     auto p = new PopupButton(control, "Color Mode");
@@ -598,9 +587,20 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         mShader.setUniform("opacity", value);
     });
 
+    auto cb = new CheckBox(light_model_pp, "Broken Normals");
+    cb->setCallback([this](bool value) {
+        mShader.bind();
+        mShader.setUniform("broken_normals", (int) value);
+        this->broken_normals = value;
+    });
+    cb->setChecked(true);
+    cb->callback()(true);
+
     light_model_pp->setLayout(new GroupLayout());
 
-    auto line_popup_btn = new PopupButton(control, "Line Renderers");
+    new Label(control, "Property Renderers");
+
+    auto line_popup_btn = new PopupButton(control, "Line");
     auto line_popup = line_popup_btn->popup();
     line_popup->setLayout(new GroupLayout());
 
@@ -664,8 +664,8 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             ss << "Renderer " << counter++;
             renderer_names.push_back(ss.str());
         }
-        combo = new ComboBox(inner_popup, renderer_names);
-        combo->setCallback([this, lr](int index) {
+
+        (new ComboBox(inner_popup, renderer_names))->setCallback([this, lr](int index) {
             line_renderer_settings[lr].point_trace_mode = true;
             line_renderer_settings[lr].show_raw_data = false;
             lr->show_line(point_renderers[index]->trace());
@@ -682,7 +682,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         });
     }
 
-    auto pr_popup_btn = new PopupButton(control, "Point Renderers");
+    auto pr_popup_btn = new PopupButton(control, "Point");
     auto pp = pr_popup_btn->popup();
     pp->setLayout(new GroupLayout());
 
@@ -693,8 +693,11 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         auto btn = new PopupButton(pp, ss.str());
         btn->popup()->setLayout(new GroupLayout());
 
-        auto b = new Button(btn->popup(), "Clear Trace");
-        b->setCallback([this, pr]() {
+        (new CheckBox(btn->popup(), "Enabled"))->setCallback([this, pr](bool value) {
+            pr->setEnabled(value);
+        });
+
+        (new Button(btn->popup(), "Clear Trace"))->setCallback([this, pr]() {
             pr->clear();
         });
     }

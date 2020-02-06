@@ -18,12 +18,15 @@ public:
     void setPoint(const surface_mesh::Point &p);
     void addPoint(const surface_mesh::Point &p);
 
+    void setEnabled(bool b) {this->enabled = b;}
+
     bool is_initialized() const {return this->initialized; }
     void clear();
 
     std::vector<surface_mesh::Point> trace() const;
 
 private:
+    bool enabled;
     Eigen::Vector3f offset;
     surface_mesh::Point point;
     bool updated = false;

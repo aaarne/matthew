@@ -22,7 +22,7 @@ std::vector<surface_mesh::Point> PointRenderer::trace() const {
     return this->points;
 }
 
-PointRenderer::PointRenderer(Eigen::Vector3f offset) : offset(offset) {
+PointRenderer::PointRenderer(Eigen::Vector3f offset) : offset(offset), enabled(true) {
 
 }
 
@@ -35,11 +35,13 @@ void PointRenderer::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
         shader.uploadAttrib("position", m);
         updated = false;
     }
-    shader.bind();
-    shader.setUniform("MV", mv);
-    shader.setUniform("P", p);
-    glPointSize(10.0f);
-    shader.drawArray(GL_POINTS, 0, 1);
+    if (enabled) {
+        shader.bind();
+        shader.setUniform("MV", mv);
+        shader.setUniform("P", p);
+        glPointSize(10.0f);
+        shader.drawArray(GL_POINTS, 0, 1);
+    }
 }
 
 void PointRenderer::clear() {
