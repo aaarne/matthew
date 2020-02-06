@@ -12,9 +12,9 @@
 
 class LineRenderer {
 public:
-    LineRenderer() : LineRenderer(surface_mesh::Color(1.0, 1.0, 1.0)) {}
+    LineRenderer(Eigen::Vector3f offset) : LineRenderer(offset, surface_mesh::Color(1.0, 1.0, 1.0)) {}
 
-    explicit LineRenderer(surface_mesh::Color c) : color(c), enabled(true) {}
+    explicit LineRenderer(Eigen::Vector3f offset, surface_mesh::Color c) : offset(offset), color(c), enabled(true) {}
 
     void setVisible(bool visible) { this->enabled = visible; }
 
@@ -33,9 +33,10 @@ public:
     surface_mesh::Color getColor() const { return color; }
 
 protected:
-    void upload_line();
+    void upload_line(bool apply_offset = false);
 
 private:
+    Eigen::Vector3f offset;
     surface_mesh::Color color;
     nanogui::GLShader lineShader;
     bool enabled;

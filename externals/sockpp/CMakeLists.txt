@@ -1,4 +1,4 @@
-add_library(sockpp OBJECT
+add_library(sockpp
         src/acceptor.cpp
         src/connector.cpp
         src/datagram_socket.cpp

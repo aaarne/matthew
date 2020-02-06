@@ -361,6 +361,22 @@ void Meshiew::calc_gauss_curvature() {
 }
 
 void Meshiew::initShaders() {
+    line_renderers = {
+            new LineRenderer(model_center, surface_mesh::Color(1.0, 1.0, 1.0)),
+            new LineRenderer(model_center, surface_mesh::Color(0.0, 0.0, 0.0)),
+            new LineRenderer(model_center, surface_mesh::Color(1.0, 0.0, 0.0)),
+    };
+
+    for (const auto &lr : line_renderers) {
+        line_renderer_settings[lr].n_lines = 10;
+        line_renderer_settings[lr].prop_name = "v:id";
+        auto c = lr->getColor();
+        line_renderer_settings[lr].color << c.x, c.y, c.z;
+    }
+
+    point_renderers = {
+            new PointRenderer(model_center),
+    };
     using namespace shaders;
     mShader.init("mesh_shader", simple_vertex, fragment_light);
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
@@ -689,22 +705,6 @@ Meshiew::Meshiew(bool fs) :
         light_color(1, 1, 1),
         edge_color(0, 0, 0) {
 
-    line_renderers = {
-            new LineRenderer(surface_mesh::Color(1.0, 1.0, 1.0)),
-            new LineRenderer(surface_mesh::Color(0.0, 0.0, 0.0)),
-            new LineRenderer(surface_mesh::Color(1.0, 0.0, 0.0)),
-    };
-
-    for (const auto &lr : line_renderers) {
-        line_renderer_settings[lr].n_lines = 10;
-        line_renderer_settings[lr].prop_name = "v:id";
-        auto c = lr->getColor();
-        line_renderer_settings[lr].color << c.x, c.y, c.z;
-    }
-
-    point_renderers = {
-            new PointRenderer(),
-    };
 }
 
 Meshiew::~Meshiew() {

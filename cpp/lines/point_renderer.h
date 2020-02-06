@@ -12,6 +12,7 @@
 
 class PointRenderer {
 public:
+    explicit PointRenderer(Eigen::Vector3f offset);
     void init();
     void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p);
     void setPoint(const surface_mesh::Point &p);
@@ -22,6 +23,7 @@ public:
     std::vector<surface_mesh::Point> trace() const;
 
 private:
+    Eigen::Vector3f offset;
     surface_mesh::Point point;
     bool updated = false;
     nanogui::GLShader shader;
