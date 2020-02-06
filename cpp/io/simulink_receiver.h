@@ -8,6 +8,7 @@
 
 #include <string>
 #include <sockpp/udp_socket.h>
+#include <vector>
 
 class SimulinkReceiver {
 public:

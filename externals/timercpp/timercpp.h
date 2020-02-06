@@ -1,6 +1,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <functional>
 
 #ifndef TIMER_CPP
 #define TIMER_CPP
