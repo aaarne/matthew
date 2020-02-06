@@ -31,6 +31,6 @@ add_custom_target(DGP_DATA SOURCES ${DATA})
 copy_files_once(${DATA})
 
 add_subdirectory(externals/shader2header)
-
+add_subdirectory(externals/sockpp)
 add_subdirectory(matthew)
 add_subdirectory(cpp)
