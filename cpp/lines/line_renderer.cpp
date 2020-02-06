@@ -21,10 +21,11 @@ void LineRenderer::init() {
 void LineRenderer::show_line_segments(const std::vector<Point> &l) {
     this->line = l;
     this->strip_mode = false;
-    upload_line(true);
+    this->apply_offset = true;
+    this->updated = true;
 }
 
-void LineRenderer::upload_line(bool apply_offset) {
+void LineRenderer::upload_line() {
     Eigen::MatrixXf p(3, this->line.size());
     int j = 0;
     for (const auto &v : this->line) {
@@ -128,10 +129,15 @@ void LineRenderer::show_isolines(const Surface_mesh &mesh, const std::string &pr
 
     this->line = line_segments;
     this->strip_mode = false;
-    upload_line(false);
+    this->apply_offset = false;
+    this->updated = true;
 }
 
 void LineRenderer::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
+    if (updated) {
+        upload_line();
+        this->updated = false;
+    }
     if (this->enabled) {
         glEnable(GL_LINE_SMOOTH);
         glLineWidth(1.0);
@@ -154,5 +160,6 @@ void LineRenderer::setColor(const surface_mesh::Color &c) {
 void LineRenderer::show_line(const std::vector<surface_mesh::Point> &l) {
     this->line = l;
     this->strip_mode = true;
-    upload_line(true);
+    this->apply_offset = true;
+    this->updated = true;
 }

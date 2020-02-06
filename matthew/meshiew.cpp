@@ -372,6 +372,8 @@ void Meshiew::initShaders() {
         line_renderer_settings[lr].prop_name = "v:id";
         auto c = lr->getColor();
         line_renderer_settings[lr].color << c.x, c.y, c.z;
+        line_renderer_settings[lr].point_trace_mode = false;
+        line_renderer_settings[lr].point_renderer_id = 0;
     }
 
     point_renderers = {
@@ -843,6 +845,11 @@ void Meshiew::get_ready_to_run() {
                     values[1],
                     values[2]);
             pr->setPoint(p);
+        }
+        for (const auto &lr : line_renderers) {
+            if (line_renderer_settings[lr].point_trace_mode) {
+                lr->show_line(point_renderers[line_renderer_settings[lr].point_renderer_id]->trace());
+            }
         }
     }, 0);
 }

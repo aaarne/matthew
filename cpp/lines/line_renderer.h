@@ -33,7 +33,7 @@ public:
     surface_mesh::Color getColor() const { return color; }
 
 protected:
-    void upload_line(bool apply_offset = false);
+    void upload_line();
 
 private:
     Eigen::Vector3f offset;
@@ -42,6 +42,8 @@ private:
     bool enabled;
     std::vector<surface_mesh::Point> line;
     bool strip_mode = false;
+    bool apply_offset = true;
+    bool updated = false;
 
 };
 
