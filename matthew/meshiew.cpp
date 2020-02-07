@@ -697,8 +697,14 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             pr->setEnabled(value);
         });
 
-        (new Button(btn->popup(), "Clear Trace"))->setCallback([this, pr]() {
+        (new Button(btn->popup(), "Clear Trace"))->setCallback([this, pr, counter]() {
             pr->clear();
+            for (const auto &lr : line_renderers) {
+                if (line_renderer_settings[lr].point_trace_mode
+                && line_renderer_settings[lr].point_renderer_id == (counter - 2)) {
+                    lr->show_line(pr->trace());
+                }
+            }
         });
     }
 
