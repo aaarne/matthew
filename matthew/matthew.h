@@ -35,7 +35,7 @@ protected:
 
     void drawContents() final;
 
-    virtual void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) = 0;
+    virtual void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {}
 
     void initGUI();
 
