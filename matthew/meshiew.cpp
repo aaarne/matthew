@@ -534,8 +534,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     });
 
     new Label(c, "Color Coding");
-    auto combo = new ComboBox(c, selectable_properties);
-    combo->setCallback([this](int index) {
+    (new ComboBox(c, selectable_properties))->setCallback([this](int index) {
         auto prop = property_map[selectable_properties[index]];
         upload_color(prop);
     });
