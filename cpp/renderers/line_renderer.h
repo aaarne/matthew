@@ -46,7 +46,7 @@ private:
     surface_mesh::Color color;
     nanogui::GLShader lineShader;
     Eigen::MatrixXf line;
-    float intensity;
+    float intensity = 1.0;
     bool strip_mode = false;
     bool updated = false;
 

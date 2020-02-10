@@ -68,12 +68,9 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
-    if (wireframe) {
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(1.0, 1.0);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(1.0, 1.0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     mShader.setUniform("intensity", base_color);
     mShader.setUniform("light_color", light_color);
     mShader.setUniform("color_mode", (int) color_mode);
@@ -82,9 +79,12 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     if (wireframe) {
         glDisable(GL_POLYGON_OFFSET_FILL);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        mShader.setUniform("color_mode", (int)COLOR_MODE::NORMAL);
         mShader.setUniform("intensity", edge_color);
         mShader.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
+        glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        mShader.setUniform("color_mode", (int)color_mode);
     }
 
     if (normals) {

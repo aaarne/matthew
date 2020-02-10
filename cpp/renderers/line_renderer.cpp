@@ -15,6 +15,7 @@ void LineRenderer::init() {
     Eigen::Vector3f line_color;
     line_color << color.x, color.y, color.z;
     lineShader.setUniform("line_color", line_color);
+    lineShader.setUniform("intensity", intensity);
 }
 
 void LineRenderer::show_line_segments(const Eigen::MatrixXf &l) {

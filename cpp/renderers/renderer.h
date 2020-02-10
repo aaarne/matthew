@@ -5,6 +5,9 @@
 #ifndef MATTHEW_RENDERER_H
 #define MATTHEW_RENDERER_H
 
+#include <surface_mesh/types.h>
+#include <vector>
+
 class Renderer {
 public:
     virtual void init() = 0;
