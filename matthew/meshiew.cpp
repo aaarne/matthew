@@ -161,7 +161,7 @@ void Meshiew::meshProcess() {
     MatrixXf normals_attrib(3, mesh.n_vertices());
 
     j = 0;
-    for (auto v: mesh.vertices()) {
+    for (const auto &v: mesh.vertices()) {
         mesh_points.col(j) << mesh.position(v).x,
                 mesh.position(v).y,
                 mesh.position(v).z;
