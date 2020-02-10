@@ -844,7 +844,7 @@ void Meshiew::calc_boundary() {
     }
     cout << "Computing the boundary took " << duration_cast<milliseconds>(steady_clock::now() - t_start).count()
          << "ms.";
-    boundary_renderer->show_line(points);
+    boundary_renderer->show_line_segments(points);
 }
 
 void Meshiew::get_ready_to_run() {
