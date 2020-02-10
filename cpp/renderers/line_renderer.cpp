@@ -163,3 +163,8 @@ void LineRenderer::setColor(const Eigen::Vector3f &c) {
     this->setColor(smc);
 }
 
+void LineRenderer::show_line(const Eigen::MatrixXf &l) {
+    this->line = l;
+    this->updated = true;
+    this->strip_mode = true;
+}

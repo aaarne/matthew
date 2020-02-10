@@ -13,6 +13,7 @@
 
 class LineRenderer : public Renderer {
 public:
+    explicit LineRenderer() : LineRenderer(Eigen::Vector3f::Zero()) {}
     explicit LineRenderer(const Eigen::Vector3f &offset) : LineRenderer(offset, surface_mesh::Color(1.0, 1.0, 1.0)) {}
 
     explicit LineRenderer(const Eigen::Vector3f &offset, surface_mesh::Color c) : offset(offset), color(c), intensity(1.0) {}
@@ -28,6 +29,7 @@ public:
     void show_line_segments(const Eigen::MatrixXf &l);
 
     void show_line(const std::vector<surface_mesh::Point> &l);
+    void show_line(const Eigen::MatrixXf &l);
 
     void show_isolines(const surface_mesh::Surface_mesh &mesh, const std::string &property_name, int n_intervals);
 

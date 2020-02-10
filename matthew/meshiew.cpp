@@ -93,16 +93,6 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
         mShaderNormals.setUniform("P", p);
         mShaderNormals.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
     }
-
-    if (boundary) {
-        boundaryShader.bind();
-        glEnable(GL_LINE_SMOOTH);
-        boundaryShader.setUniform("MV", mv);
-        boundaryShader.setUniform("P", p);
-        boundaryShader.setUniform("intensity", 0);
-        boundaryShader.drawArray(GL_LINES, 0, n_boundary_points);
-        glDisable(GL_LINE_SMOOTH);
-    }
 }
 
 surface_mesh::Color Meshiew::value_to_color(Scalar value, Scalar min_value, Scalar max_value) {
@@ -376,7 +366,10 @@ void Meshiew::initShaders() {
 
     mShader.init("mesh_shader", simple_vertex, fragment_light);
     mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
-    boundaryShader.init("boundary_shader", line_shader_verts, line_shader_frags);
+
+    boundary_renderer = std::make_shared<LineRenderer>();
+    boundary_renderer->init();
+    this->add_renderer(boundary_renderer);
 
     for (const auto &lr : line_renderers) {
         lr->setVisible(false);
@@ -447,7 +440,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     });
 
     (new CheckBox(control, "Boundary"))->setCallback([this](bool value) {
-        this->boundary = value;
+        this->boundary_renderer->setVisible(value);
     });
 
     (new CheckBox(control, "Normals"))->setCallback([this](bool normals) {
@@ -849,10 +842,9 @@ void Meshiew::calc_boundary() {
                     p2.z;
         }
     }
-    boundaryShader.bind();
-    boundaryShader.uploadAttrib("position", points);
     cout << "Computing the boundary took " << duration_cast<milliseconds>(steady_clock::now() - t_start).count()
          << "ms.";
+    boundary_renderer->show_line(points);
 }
 
 void Meshiew::get_ready_to_run() {

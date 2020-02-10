@@ -88,14 +88,12 @@ protected:
     Eigen::Vector3f light_color;
     nanogui::GLShader mShader;
     nanogui::GLShader mShaderNormals;
-    nanogui::GLShader boundaryShader;
 
     Eigen::MatrixXf mesh_points;
     bool normals = false;
     nanogui::PopupButton *popupCurvature;
     nanogui::Window *window;
     bool wireframe = false;
-    bool boundary = false;
     bool broken_normals = false;
     Surface_mesh mesh;
 
@@ -109,6 +107,8 @@ protected:
         bool point_trace_mode;
         int point_renderer_id;
     };
+
+    std::shared_ptr<LineRenderer> boundary_renderer;
 
     std::vector<LineRenderer*> line_renderers;
     std::map<LineRenderer*, line_renderer_settings> line_renderer_settings;
