@@ -55,10 +55,11 @@ protected:
 protected:
 
     std::string filename;
-    bool draw_grid = false;
-    float grid_intensity = 0.3;
     std::string additional_data_folder = "";
     Eigen::Vector3f model_center;
+
+    void add_renderer(const std::shared_ptr<Renderer> &r) {this->renderers.push_back(r);}
+    void add_renderer(Renderer *r) {this->renderers.emplace_back(r);}
 
 private:
     struct CameraParameters {
@@ -74,8 +75,9 @@ private:
     };
 
     bool demo_mode = false;
+
     std::shared_ptr<Grid> grid;
-    nanogui::GLShader gridShader;
+    std::vector<std::shared_ptr<Renderer>> renderers;
 
     nanogui::Window* control;
     nanogui::Window* info;

@@ -22,11 +22,11 @@ std::vector<surface_mesh::Point> PointRenderer::trace() const {
     return this->points;
 }
 
-PointRenderer::PointRenderer(Eigen::Vector3f offset) : offset(offset), enabled(true) {
+PointRenderer::PointRenderer(Eigen::Vector3f offset) : offset(offset) {
 
 }
 
-void PointRenderer::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
+void PointRenderer::do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) {
     if (updated) {
         Eigen::MatrixXf m(3, 1);
         m.col(0) << point.x, point.y, point.z;

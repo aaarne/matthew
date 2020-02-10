@@ -1,2 +1,2 @@
 add_subdirectory(io)
-add_subdirectory(lines)
+add_subdirectory(renderers)

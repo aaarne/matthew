@@ -16,7 +16,7 @@ add_definitions(${NANOGUI_EXTRA_DEFS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/externals/cli)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/externals/csv)
 
-file(GLOB shaders "../shaders/*.glsl")
+file(GLOB shaders "shaders/*.glsl")
 
 include_directories(${CMAKE_BINARY_DIR}) # For generated shader header
 

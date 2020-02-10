@@ -9,26 +9,30 @@
 #include <nanogui/glutil.h>
 #include <surface_mesh/types.h>
 #include <surface_mesh/Surface_mesh.h>
+#include "renderer.h"
 
-class LineRenderer {
+class LineRenderer : public Renderer {
 public:
-    LineRenderer(Eigen::Vector3f offset) : LineRenderer(offset, surface_mesh::Color(1.0, 1.0, 1.0)) {}
+    explicit LineRenderer(const Eigen::Vector3f &offset) : LineRenderer(offset, surface_mesh::Color(1.0, 1.0, 1.0)) {}
 
-    explicit LineRenderer(Eigen::Vector3f offset, surface_mesh::Color c) : offset(offset), color(c), enabled(true) {}
+    explicit LineRenderer(const Eigen::Vector3f &offset, surface_mesh::Color c) : offset(offset), color(c), intensity(1.0) {}
 
-    void setVisible(bool visible) { this->enabled = visible; }
+    virtual ~LineRenderer() {}
 
-    void init();
+    void init() override;
 
-    void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p);
+    void do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) override;
 
     void show_line_segments(const std::vector<surface_mesh::Point> &l);
+
+    void show_line_segments(const Eigen::MatrixXf &l);
 
     void show_line(const std::vector<surface_mesh::Point> &l);
 
     void show_isolines(const surface_mesh::Surface_mesh &mesh, const std::string &property_name, int n_intervals);
 
     void setColor(const surface_mesh::Color &c);
+    void setColor(const Eigen::Vector3f &c);
 
     surface_mesh::Color getColor() const { return color; }
 
@@ -39,10 +43,9 @@ private:
     Eigen::Vector3f offset;
     surface_mesh::Color color;
     nanogui::GLShader lineShader;
-    bool enabled;
-    std::vector<surface_mesh::Point> line;
+    Eigen::MatrixXf line;
+    float intensity;
     bool strip_mode = false;
-    bool apply_offset = true;
     bool updated = false;
 
 };

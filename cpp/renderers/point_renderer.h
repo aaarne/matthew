@@ -9,16 +9,15 @@
 #include <nanogui/glutil.h>
 #include <surface_mesh/types.h>
 #include <mutex>
+#include "renderer.h"
 
-class PointRenderer {
+class PointRenderer : public Renderer {
 public:
     explicit PointRenderer(Eigen::Vector3f offset);
-    void init();
-    void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p);
+    virtual void init() override;
+    virtual void do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) override;
     void setPoint(const surface_mesh::Point &p);
     void addPoint(const surface_mesh::Point &p);
-
-    void setEnabled(bool b) {this->enabled = b;}
 
     bool is_initialized() const {return this->initialized; }
     void clear();
@@ -26,7 +25,6 @@ public:
     std::vector<surface_mesh::Point> trace() const;
 
 private:
-    bool enabled;
     Eigen::Vector3f offset;
     surface_mesh::Point point;
     bool updated = false;
