@@ -17,21 +17,26 @@
 
 using namespace std;
 
-Pointiew::Pointiew(bool fs) : Matthew::Matthew(fs), has_color(false), point_size(2.0), n(0), color(1.0, 1.0, 1.0) {
+Pointiew::Pointiew(bool fs) : Matthew::Matthew(fs), color(1.0, 1.0, 1.0) {
     setBackground(nanogui::Color(0.f, 0.f, 0.f, 0.f));
+    renderer = std::make_shared<PointCloudRenderer>();
 }
 
 void Pointiew::initModel() {
-    pcdShader.bind();
-    pcdShader.uploadAttrib("position", points);
-    pcdShader.uploadAttrib("vertexColors", colors);
-    pcdShader.setUniform("ext_color", (int)has_color);
-
+    if (has_color) {
+        renderer->show_points(points, colors);
+    } else {
+        renderer->show_points(points);
+        renderer->set_color(color);
+    }
+    renderer->setVisible(true);
+    cout << points.rows() << " x " << points.cols() << endl;
 }
 
 void Pointiew::initShaders() {
     using namespace shaders;
-    pcdShader.init("pcd", point_cloud_verts, point_cloud_frag);
+    renderer->init();
+    add_renderer(renderer);
 }
 
 void Pointiew::create_gui_elements(nanogui::Window *control, nanogui::Window *info) {
@@ -42,6 +47,7 @@ void Pointiew::create_gui_elements(nanogui::Window *control, nanogui::Window *in
     cp->setFixedSize({100, 20});
     cp->setCallback([this](const Color &c) {
         color << c.r(), c.g(), c.b();
+        renderer->set_color(color);
     });
     cp->setEnabled(!has_color);
 
@@ -50,7 +56,7 @@ void Pointiew::create_gui_elements(nanogui::Window *control, nanogui::Window *in
     auto slider = new Slider(control);
     slider->setValue(0.2);
     slider->setCallback([this](float value) {
-        this->point_size = std::max(0.1f, 10.0f * value);
+        renderer->set_point_size(std::max(0.1f, 10.f * value));
     });
 
     Window *window = info;
@@ -149,22 +155,10 @@ void Pointiew::load_from_file(const std::string &filename) {
         cerr << "Unexpected number of fields in point cloud data" << endl;
         exit(1);
     }
-    this->n = n;
     in.close();
     this->points = points;
     this->colors = colors;
 }
 
-void Pointiew::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
-    pcdShader.bind();
-    pcdShader.setUniform("MV", mv);
-    pcdShader.setUniform("P", p);
-    pcdShader.setUniform("color", color);
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    glPointSize(point_size);
-    pcdShader.drawArray(GL_POINTS, 0, n);
-
-}
 
 

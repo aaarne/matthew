@@ -6,6 +6,7 @@
 #define CROISSANT_POINTIEW_H
 
 
+#include <point_cloud_renderer.h>
 #include "matthew.h"
 #include "grid.h"
 
@@ -20,8 +21,6 @@ protected:
 
     void initModel() override;
 
-    void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) override;
-
     void initShaders() override;
 
     void create_gui_elements(nanogui::Window *, nanogui::Window *info) override;
@@ -33,15 +32,11 @@ protected:
     float get_model_dist_max() override;
 
 private:
-    float point_size;
     bool has_color;
-    long n;
     Eigen::MatrixXf colors;
     Eigen::Vector3f color;
     Eigen::MatrixXf points;
-
-
-    nanogui::GLShader pcdShader;
+    std::shared_ptr<PointCloudRenderer> renderer;
 };
 
 

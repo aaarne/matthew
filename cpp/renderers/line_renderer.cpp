@@ -17,25 +17,21 @@ void LineRenderer::init() {
     lineShader.setUniform("line_color", line_color);
 }
 
-
-void LineRenderer::show_line_segments(const std::vector<Point> &l) {
+void LineRenderer::show_line_segments(const Eigen::MatrixXf &l) {
     this->line = l;
     this->strip_mode = false;
-    this->apply_offset = true;
+    this->updated = true;
+}
+
+void LineRenderer::show_line_segments(const std::vector<Point> &l) {
+    this->line = points_to_matrix(l, offset);
+    this->strip_mode = false;
     this->updated = true;
 }
 
 void LineRenderer::upload_line() {
-    Eigen::MatrixXf p(3, this->line.size());
-    int j = 0;
-    for (const auto &v : this->line) {
-        p.col(j++) << v.x, v.y, v.z;
-    }
-    if (apply_offset) {
-        p.colwise() += offset;
-    }
     lineShader.bind();
-    lineShader.uploadAttrib("position", p);
+    lineShader.uploadAttrib("position", line);
 }
 
 std::pair<long, long> interval_borders(float a, float b, float l, float size) {
@@ -127,13 +123,12 @@ void LineRenderer::show_isolines(const Surface_mesh &mesh, const std::string &pr
         }
     }
 
-    this->line = line_segments;
+    this->line = points_to_matrix(line_segments);
     this->strip_mode = false;
-    this->apply_offset = false;
     this->updated = true;
 }
 
-void LineRenderer::draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {
+void LineRenderer::do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) {
     if (updated) {
         upload_line();
         this->updated = false;
@@ -158,8 +153,18 @@ void LineRenderer::setColor(const surface_mesh::Color &c) {
 }
 
 void LineRenderer::show_line(const std::vector<surface_mesh::Point> &l) {
-    this->line = l;
+    this->line = points_to_matrix(l, offset);
     this->strip_mode = true;
-    this->apply_offset = true;
     this->updated = true;
+}
+
+void LineRenderer::setColor(const Eigen::Vector3f &c) {
+    surface_mesh::Color smc(c.x(), c.y(), c.z());
+    this->setColor(smc);
+}
+
+void LineRenderer::show_line(const Eigen::MatrixXf &l) {
+    this->line = l;
+    this->updated = true;
+    this->strip_mode = true;
 }

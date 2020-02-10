@@ -33,7 +33,7 @@ Matthew *Matthew::create(const std::string &filename, bool fullscreen) {
     vector<string> mshtypes = {"obj", "off", "stl", "msh"};
     if (has_ending(filename, "pcd")) {
         matthew = new Pointiew(fullscreen);
-    } else if ((filename == "-") || std::any_of(mshtypes.begin(), mshtypes.end(), [&](string ending) {return has_ending(filename, ending);})) {
+    } else if ((filename == "-") || std::any_of(mshtypes.begin(), mshtypes.end(), [&](const string& ending) {return has_ending(filename, ending);})) {
         matthew = new Meshiew(fullscreen);
     } else {
         throw std::invalid_argument("Unknown filetype");
@@ -67,7 +67,6 @@ bool has_ending(std::string const &fullString, std::string const &ending) {
 }
 
 void Matthew::run() {
-    gridShader.init("grid", shaders::grid_verts, shaders::grid_frag);
     initShaders();
     initModel();
 
@@ -77,11 +76,12 @@ void Matthew::run() {
     model_center = get_model_center();
     cam.modelTranslation = -model_center;
 
-
     Eigen::Vector3f dim = this->get_model_dimensions();
     grid = std::make_shared<Grid>(11, max(dim(0), dim(1)), get_model_center());
-    gridShader.bind();
-    gridShader.uploadAttrib("position", grid->get_points());
+    grid->init();
+    grid->setIntensity(0.3f);
+    this->renderers.push_back(grid);
+
     initGUI();
     get_ready_to_run();
 }
@@ -185,15 +185,14 @@ void Matthew::initGUI() {
 
     new Label(control, "Grid");
     auto chkbox = new CheckBox(control, "Show Grid");
-    chkbox->setChecked(draw_grid);
     chkbox->setCallback([this](bool value) {
-        this->draw_grid = value;
+        this->grid->setVisible(value);
     });
 
     auto *slider = new Slider(control);
     slider->setValue(0.3);
     slider->setCallback([this](float value) {
-        this->grid_intensity = value;
+        this->grid->setIntensity(value);
     });
 
     info = new Window(this, "Info");
@@ -252,12 +251,8 @@ void Matthew::drawContents() {
     computeCameraMatrices(model, view, projection);
     Eigen::Matrix4f mv = view * model;
     draw(mv, projection);
-    if (draw_grid) {
-        gridShader.bind();
-        gridShader.setUniform("MV", mv);
-        gridShader.setUniform("P", projection);
-        gridShader.setUniform("intensity", grid_intensity);
-        gridShader.drawArray(GL_LINES, 0, grid->n());
+    for (const auto &r : renderers) {
+        r->draw(mv, projection);
     }
 }
 
