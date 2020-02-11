@@ -307,8 +307,9 @@ void Meshiew::initShaders() {
     };
 
     vectorfield_renderers = {
-            new VectorfieldRenderer(),
-            new VectorfieldRenderer(),
+            new VectorfieldRenderer(Eigen::Vector3f(1.0, 0.0, 0.0)),
+            new VectorfieldRenderer(Eigen::Vector3f(0.0, 1.0, 0.0)),
+	    new VectorfieldRenderer(Eigen::Vector3f(0.0, 0.0, 1.0)),
     };
 
     for (const auto &lr : line_renderers) {

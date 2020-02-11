@@ -12,6 +12,8 @@
 
 class VectorfieldRenderer : public Renderer {
 public:
+    explicit VectorfieldRenderer() : VectorfieldRenderer(Eigen::Vector3f(1.0, 0.0, 0.0)) {}
+    explicit VectorfieldRenderer(const Eigen::Vector3f &color) : color(color) {}
     void init() override;
     void show_vectorfield(const Eigen::MatrixXf &p, const Eigen::MatrixXf &v);
     void show_vectorfield(const Eigen::MatrixXf &p, const Eigen::MatrixXf &v, const Eigen::MatrixXf &colors);
@@ -28,7 +30,7 @@ private:
     float scaling = 1.0f;
     Eigen::MatrixXf points;
     Eigen::MatrixXf vecs;
-    Eigen::Vector3f color = Eigen::Vector3f(1.0, 0.0, 0.0);
+    Eigen::Vector3f color;
     Eigen::MatrixXf colors;
     nanogui::GLShader shader;
 };
