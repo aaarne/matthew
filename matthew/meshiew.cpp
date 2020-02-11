@@ -539,10 +539,23 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         edge_color << c.r(), c.g(), c.b();
     });
 
-    new Label(c, "Color Coding");
+    new Label(c, "Color Coding (Scalar)");
     (new ComboBox(c, selectable_scalar_properties))->setCallback([this](int index) {
         auto prop = property_map[selectable_scalar_properties[index]];
         upload_color(prop);
+    });
+
+    new Label(c, "Color Coding (Vector Length)");
+    (new ComboBox(c, selectable_vector_properties))->setCallback([this](int index) {
+        auto prop = mesh.vertex_property<Vec3>(selectable_vector_properties[index]);
+        const string prop_name = "v:vector_length_tmp";
+        auto len_prop = mesh.vertex_property<Scalar>(prop_name);
+        for (const auto &v : mesh.vertices()) {
+            Eigen::Vector3f vec;
+            vec << prop[v].x, prop[v].y, prop[v].z;
+            len_prop[v] = vec.norm();
+        }
+        upload_color(prop_name);
     });
 
     Window *window = info;
