@@ -11,7 +11,7 @@ SimulinkReceiver::SimulinkReceiver(const std::string &host, int port) : addr(hos
 	if (!sock.bind(sockpp::inet_address(host, port))) {
 		cerr << "Error binding the UDP v4 socket: " << sock.last_error_str() << endl;
 	}
-	cout << "Connected to: " << sock.address() << endl;
+	cout << "Simulink Receiver connected to: " << sock.address() << endl;
 }
 
 std::vector<double> SimulinkReceiver::read_doubles(int n) {

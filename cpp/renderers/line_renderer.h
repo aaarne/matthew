@@ -16,7 +16,7 @@ public:
     explicit LineRenderer() : LineRenderer(Eigen::Vector3f::Zero()) {}
     explicit LineRenderer(const Eigen::Vector3f &offset) : LineRenderer(offset, surface_mesh::Color(1.0, 1.0, 1.0)) {}
 
-    explicit LineRenderer(const Eigen::Vector3f &offset, surface_mesh::Color c) : offset(offset), color(c), intensity(1.0) {}
+    explicit LineRenderer(const Eigen::Vector3f &offset, surface_mesh::Color c) : offset(offset), color(c) {}
 
     virtual ~LineRenderer() {}
 
@@ -46,7 +46,6 @@ private:
     surface_mesh::Color color;
     nanogui::GLShader lineShader;
     Eigen::MatrixXf line;
-    float intensity;
     bool strip_mode = false;
     bool updated = false;
 

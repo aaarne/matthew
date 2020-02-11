@@ -68,12 +68,9 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
-    if (wireframe) {
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(1.0, 1.0);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(1.0, 1.0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     mShader.setUniform("intensity", base_color);
     mShader.setUniform("light_color", light_color);
     mShader.setUniform("color_mode", (int) color_mode);
@@ -82,16 +79,12 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     if (wireframe) {
         glDisable(GL_POLYGON_OFFSET_FILL);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        mShader.setUniform("color_mode", (int) COLOR_MODE::NORMAL);
         mShader.setUniform("intensity", edge_color);
         mShader.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
+        glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-
-    if (normals) {
-        mShaderNormals.bind();
-        mShaderNormals.setUniform("MV", mv);
-        mShaderNormals.setUniform("P", p);
-        mShaderNormals.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
+        mShader.setUniform("color_mode", (int) color_mode);
     }
 }
 
@@ -131,8 +124,6 @@ surface_mesh::Color Meshiew::value_to_color(Scalar value, Scalar min_value, Scal
 
 void Meshiew::meshProcess() {
     using namespace surface_mesh;
-    Surface_mesh::Vertex_property<Point> vertex_normal =
-            mesh.vertex_property<Point>("v:normal");
     mesh.update_face_normals();
     mesh.update_vertex_normals();
 
@@ -142,51 +133,6 @@ void Meshiew::meshProcess() {
     calc_mean_curvature();
     calc_gauss_curvature();
     calc_boundary();
-
-    int j = 0;
-    MatrixXf mesh_points(3, mesh.n_vertices());
-    MatrixXi indices(3, mesh.n_faces());
-
-    for (const auto &f: mesh.faces()) {
-        vector<float> vv(3.0f);
-        int k = 0;
-        for (auto v: mesh.vertices(f)) {
-            vv[k] = v.idx();
-            ++k;
-        }
-        indices.col(j) << vv[0], vv[1], vv[2];
-        ++j;
-    }
-
-    MatrixXf normals_attrib(3, mesh.n_vertices());
-
-    j = 0;
-    for (auto v: mesh.vertices()) {
-        mesh_points.col(j) << mesh.position(v).x,
-                mesh.position(v).y,
-                mesh.position(v).z;
-
-        normals_attrib.col(j) << vertex_normal[v].x,
-                vertex_normal[v].y,
-                vertex_normal[v].z;
-
-        ++j;
-    }
-
-    mShader.bind();
-    mShader.uploadIndices(indices);
-    mShader.uploadAttrib("position", mesh_points);
-    mShader.uploadAttrib("normal", normals_attrib);
-    mShader.setUniform("color_mode", int(color_mode));
-    mShader.setUniform("intensity", base_color);
-
-
-    mShaderNormals.bind();
-    mShaderNormals.uploadIndices(indices);
-    mShaderNormals.uploadAttrib("position", mesh_points);
-    mShaderNormals.uploadAttrib("normal", normals_attrib);
-    this->mesh_points = mesh_points;
-
 }
 
 void Meshiew::calc_edges_weights() {
@@ -257,7 +203,7 @@ void Meshiew::calc_vertices_weights() {
 }
 
 void Meshiew::computeValence() {
-    selectable_properties.emplace_back("Valence");
+    selectable_scalar_properties.emplace_back("Valence");
     property_map["Valence"] = "v:valence";
     Surface_mesh::Vertex_property<Scalar> vertex_valence =
             mesh.vertex_property<Scalar>("v:valence", 0);
@@ -265,7 +211,7 @@ void Meshiew::computeValence() {
         vertex_valence[v] = mesh.valence(v);
     }
 
-    selectable_properties.emplace_back("ID");
+    selectable_scalar_properties.emplace_back("ID");
     property_map["ID"] = "v:id";
     Surface_mesh::Vertex_property<Scalar> vv = mesh.vertex_property<Scalar>("v:id", 0);
     for (const auto &v : mesh.vertices()) {
@@ -274,7 +220,7 @@ void Meshiew::computeValence() {
 }
 
 void Meshiew::calc_uniform_laplacian() {
-    Surface_mesh::Vertex_property<Scalar> v_uniLaplace = mesh.vertex_property<Scalar>("v:uniLaplace", 0);
+    Surface_mesh::Vertex_property<Vec3> v_uniLaplace = mesh.vertex_property<Vec3>("v:uniLaplace", Vec3(0, 0, 0));
     Point laplace(0.0);
 
     for (const auto &v : mesh.vertices()) {
@@ -284,31 +230,35 @@ void Meshiew::calc_uniform_laplacian() {
             laplace += mesh.position(v2) - mesh.position(v);
             N++;
         }
-        v_uniLaplace[v] = norm(laplace / N);
+        v_uniLaplace[v] = laplace / N;
     }
 }
 
 void Meshiew::calc_mean_curvature() {
-    selectable_properties.emplace_back("Mean Curvature");
+    selectable_scalar_properties.emplace_back("Mean Curvature");
     property_map["Mean Curvature"] = "v:curvature";
     Surface_mesh::Vertex_property<Scalar> v_curvature = mesh.vertex_property<Scalar>("v:curvature", 0);
+    Surface_mesh::Vertex_property<Vec3> v_laplacian = mesh.vertex_property<Vec3>("Laplacian", Vec3(0, 0, 0));
     Surface_mesh::Edge_property<Scalar> e_weight = mesh.edge_property<Scalar>("e:weight", 0);
     Surface_mesh::Vertex_property<Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
     Point laplace(0.0);
+    float acc = 0;
 
     for (const auto &v : mesh.vertices()) {
         laplace = 0;
+        acc = 0;
         for (const auto &v2 : mesh.vertices(v)) {
             Surface_mesh::Edge e = mesh.find_edge(v, v2);
+            acc += e_weight[e];
             laplace += e_weight[e] * (mesh.position(v2) - mesh.position(v));
         }
-        laplace *= v_weight[v];
-        v_curvature[v] = norm(laplace);
+        v_laplacian[v] = laplace / acc;
+        v_curvature[v] = norm(laplace/acc);
     }
 }
 
 void Meshiew::calc_gauss_curvature() {
-    selectable_properties.emplace_back("Gauss Curvature");
+    selectable_scalar_properties.emplace_back("Gauss Curvature");
     property_map["Gauss Curvature"] = "v:gauss_curvature";
     Surface_mesh::Vertex_property<Scalar> v_gauss_curvature = mesh.vertex_property<Scalar>("v:gauss_curvature", 0);
     Surface_mesh::Vertex_property<Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
@@ -354,6 +304,11 @@ void Meshiew::initShaders() {
             new PointRenderer(model_center),
     };
 
+    vectorfield_renderers = {
+            new VectorfieldRenderer(),
+            new VectorfieldRenderer(),
+    };
+
     for (const auto &lr : line_renderers) {
         lr->setVisible(false);
         line_renderer_settings[lr].n_lines = 10;
@@ -365,11 +320,15 @@ void Meshiew::initShaders() {
     }
 
     mShader.init("mesh_shader", simple_vertex, fragment_light);
-    mShaderNormals.init("normal_shader", normals_vertex, normals_fragment, normals_geometry);
 
     boundary_renderer = std::make_shared<LineRenderer>();
     boundary_renderer->init();
     this->add_renderer(boundary_renderer);
+
+    normals_renderer = std::make_shared<VectorfieldRenderer>();
+    normals_renderer->init();
+    this->add_renderer(normals_renderer);
+    normals_renderer->setVisible(false);
 
     for (const auto &lr : line_renderers) {
         lr->setVisible(false);
@@ -381,12 +340,16 @@ void Meshiew::initShaders() {
         pr->init();
         this->add_renderer(pr);
     }
+    for (const auto &vr : vectorfield_renderers) {
+        vr->setVisible(false);
+        vr->init();
+        this->add_renderer(vr);
+    }
 
 }
 
 void Meshiew::initModel() {
     mesh_center = computeCenter(&mesh);
-    cout << "Mesh center is at: " << mesh_center << endl;
     dist_max = 0.0f;
     for (auto v: mesh.vertices()) {
         if (distance(mesh_center, mesh.position(v)) > dist_max) {
@@ -395,8 +358,45 @@ void Meshiew::initModel() {
     }
 
     meshProcess();
-    upload_color("v:valence");
+
+    int j = 0;
+    auto vertex_normal = mesh.vertex_property<Point>("v:normal");
+    MatrixXf mesh_points(3, mesh.n_vertices());
+    MatrixXi indices(3, mesh.n_faces());
+
+    for (const auto &f: mesh.faces()) {
+        vector<float> vv(3.0f);
+        int k = 0;
+        for (auto v: mesh.vertices(f)) {
+            vv[k] = v.idx();
+            ++k;
+        }
+        indices.col(j) << vv[0], vv[1], vv[2];
+        ++j;
+    }
+
+    MatrixXf normals_attrib(3, mesh.n_vertices());
+
+    j = 0;
+    for (const auto &v: mesh.vertices()) {
+        mesh_points.col(j) << mesh.position(v).x,
+                mesh.position(v).y,
+                mesh.position(v).z;
+
+        normals_attrib.col(j) << vertex_normal[v].x,
+                vertex_normal[v].y,
+                vertex_normal[v].z;
+
+        ++j;
+    }
+
+    this->mesh_points = mesh_points;
     mShader.bind();
+    mShader.uploadIndices(indices);
+    mShader.uploadAttrib("position", mesh_points);
+    mShader.uploadAttrib("normal", normals_attrib);
+    mShader.setUniform("color_mode", int(color_mode));
+    mShader.setUniform("intensity", base_color);
     mShader.setUniform("broken_normals", (int) false);
     mShader.setUniform("ambient_term", DEFAULT_AMBIENT);
     mShader.setUniform("diffuse_term", DEFAULT_DIFFUSE);
@@ -404,27 +404,40 @@ void Meshiew::initModel() {
     mShader.setUniform("opacity", DEFAULT_OPACITY);
     mShader.setUniform("shininess", 8);
 
-    cout << "Mesh has these vertex properties:" << endl;
+    upload_color("v:valence");
+    this->normals_renderer->show_vectorfield(mesh_points, normals_attrib);
+    this->normals_renderer->set_color(Vector3f(0.0, 1.0, 0.0));
+    this->normals_renderer->set_scaling(0.1f);
+
+    auto &scalar_type = mesh.get_vertex_property_type("v:valence");
+    auto &vector_type = mesh.get_vertex_property_type("v:normal");
+
     for (const auto &vprop : mesh.vertex_properties()) {
-        cout << "\t- " << vprop << endl;
-        if (vprop[0] == 'v' && vprop[1] == ':') continue;
-        selectable_properties.emplace_back(vprop);
-        property_map[vprop] = vprop;
+        if (mesh.get_vertex_property_type(vprop) == scalar_type) {
+            if (vprop[0] == 'v' && vprop[1] == ':') continue;
+            selectable_scalar_properties.emplace_back(vprop);
+            property_map[vprop] = vprop;
+        } else if (mesh.get_vertex_property_type(vprop) == vector_type) {
+            selectable_vector_properties.emplace_back(vprop);
+        }
     }
 
     for (const auto &p : line_renderer_settings) {
         p.first->show_isolines(mesh, p.second.prop_name, p.second.n_lines);
     }
 
+    for (const auto &vr : vectorfield_renderers) {
+        vr->show_vectorfield(mesh_points, normals_attrib);
+        vr->set_scaling(0.1f);
+    }
+
 }
 
 Point Meshiew::computeCenter(Surface_mesh *mesh) {
     Point center = Point(0.0f);
-
     for (auto v: mesh->vertices()) {
         center += mesh->position(v);
     }
-
     return center / mesh->n_vertices();
 }
 
@@ -444,7 +457,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     });
 
     (new CheckBox(control, "Normals"))->setCallback([this](bool normals) {
-        this->normals = !this->normals;
+        this->normals_renderer->setVisible(normals);
     });
 
 
@@ -521,8 +534,8 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     });
 
     new Label(c, "Color Coding");
-    (new ComboBox(c, selectable_properties))->setCallback([this](int index) {
-        auto prop = property_map[selectable_properties[index]];
+    (new ComboBox(c, selectable_scalar_properties))->setCallback([this](int index) {
+        auto prop = property_map[selectable_scalar_properties[index]];
         upload_color(prop);
     });
 
@@ -608,9 +621,9 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         });
 
         new Label(inner_popup, "Isolines");
-        auto combo = new ComboBox(inner_popup, selectable_properties);
+        auto combo = new ComboBox(inner_popup, selectable_scalar_properties);
         combo->setCallback([this, lr](int index) {
-            auto prop = property_map[selectable_properties[index]];
+            auto prop = property_map[selectable_scalar_properties[index]];
             line_renderer_settings[lr].prop_name = prop;
             line_renderer_settings[lr].show_raw_data = false;
             lr->show_isolines(mesh, line_renderer_settings[lr].prop_name,
@@ -687,10 +700,51 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             pr->clear();
             for (const auto &lr : line_renderers) {
                 if (line_renderer_settings[lr].point_trace_mode
-                && line_renderer_settings[lr].point_renderer_id == (counter - 2)) {
+                    && line_renderer_settings[lr].point_renderer_id == (counter - 2)) {
                     lr->show_line(pr->trace());
                 }
             }
+        });
+    }
+
+    auto vr_popup_btn = new PopupButton(control, "Vectorfield");
+    pp = vr_popup_btn->popup();
+    pp->setLayout(new GroupLayout());
+    counter = 1;
+    for (const auto &vr : vectorfield_renderers) {
+        stringstream ss;
+        ss << "Vectorfield Renderer " << counter++;
+        auto btn = new PopupButton(pp, ss.str());
+        btn->popup()->setLayout(new GroupLayout());
+
+        (new CheckBox(btn->popup(), "Enabled"))->setCallback([this, vr](bool value) {
+            vr->setVisible(value);
+        });
+
+        new Label(btn->popup(), "Scaling");
+        auto slider = new Slider(btn->popup());
+        slider->setValue(0.1);
+        slider->setCallback([vr] (float value) {
+            vr->set_scaling(value);
+        });
+
+        new Label(btn->popup(), "Vector Color");
+        auto cp = new ColorPicker(btn->popup(), Eigen::Vector3f(1.0, 0.0, 0.0));
+        cp->setFixedSize({100, 20});
+        cp->setCallback([vr](const Color &c) {
+            vr->set_color(c.head<3>());
+        });
+
+        new Label(btn->popup(), "Data Source");
+        auto combo = new ComboBox(btn->popup(), selectable_vector_properties);
+        combo->setCallback([this, vr](int index) {
+            auto prop = mesh.get_vertex_property<Vec3>(selectable_vector_properties[index]);
+            Eigen::MatrixXf vecs(3, mesh_points.cols());
+            int j = 0;
+            for (const auto &v : mesh.vertices()) {
+                vecs.col(j++) << prop[v].x, prop[v].y, prop[v].z;
+            }
+            vr->show_vectorfield(mesh_points, vecs);
         });
     }
 
@@ -725,7 +779,6 @@ Meshiew::Meshiew(bool fs) :
 
 Meshiew::~Meshiew() {
     mShader.free();
-    mShaderNormals.free();
 }
 
 
@@ -843,7 +896,7 @@ void Meshiew::calc_boundary() {
         }
     }
     cout << "Computing the boundary took " << duration_cast<milliseconds>(steady_clock::now() - t_start).count()
-         << "ms.";
+         << "ms." << endl;
     boundary_renderer->show_line_segments(points);
 }
 

@@ -1,8 +1,9 @@
 #version 330
 
-varying vec4 vertColor;
+in vec4 vertColor;
 uniform float intensity;
+out vec4 color;
 
 void main() {
-     gl_FragColor = vec4(vertColor.xyz, intensity);
+     color = vec4(vertColor.xyz, 1.0);
 }
