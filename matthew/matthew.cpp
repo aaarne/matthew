@@ -79,7 +79,7 @@ void Matthew::run() {
     Eigen::Vector3f dim = this->get_model_dimensions();
     grid = std::make_shared<Grid>(11, max(dim(0), dim(1)), get_model_center());
     grid->init();
-    grid->setIntensity(0.3f);
+    grid->setIntensity(1.f);
     this->renderers.push_back(grid);
 
     initGUI();
@@ -190,7 +190,7 @@ void Matthew::initGUI() {
     });
 
     auto *slider = new Slider(control);
-    slider->setValue(0.3);
+    slider->setValue(1.0);
     slider->setCallback([this](float value) {
         this->grid->setIntensity(value);
     });

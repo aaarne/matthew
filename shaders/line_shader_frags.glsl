@@ -5,5 +5,5 @@ uniform float intensity;
 out vec4 color;
 
 void main() {
-     color = vec4(vertColor.xyz, intensity);
+     color = vec4(vertColor.xyz, 1.0);
 }
