@@ -29,11 +29,8 @@ void VectorfieldRenderer::do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix
 }
 
 void VectorfieldRenderer::show_vectorfield(const Eigen::MatrixXf &p, const Eigen::MatrixXf &v) {
-    Eigen::MatrixXf vecs(v);
-    float mean_length = vecs.colwise().norm().mean();
-    vecs *= this->scaling/mean_length;
     this->points = p;
-    this->vecs = vecs;
+    this->vecs = v;
     this->updated = true;
 }
 

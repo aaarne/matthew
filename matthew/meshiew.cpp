@@ -47,12 +47,17 @@ void Meshiew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_m
     std::sort(values.begin(), values.end());
     Scalar min_value = values[i], max_value = values[n - 1 - i];
 
-    cout << "Blue:\t" << min_value + 0.0 / 4.0 * (max_value - min_value) << endl;
-    cout << "Cyan:\t" << min_value + 1.0 / 4.0 * (max_value - min_value) << endl;
-    cout << "Green:\t" << min_value + 2.0 / 4.0 * (max_value - min_value) << endl;
-    cout << "Yellow:\t" << min_value + 3.0 / 4.0 * (max_value - min_value) << endl;
-    cout << "Red:\t" << min_value + 4.0 / 4.0 * (max_value - min_value) << endl;
+    if (color_coding_window) {
+        color_coding_window->update_code(
+                {
+                        min_value + 0.0 / 4.0 * (max_value - min_value),
+                        min_value + 1.0 / 4.0 * (max_value - min_value),
+                        min_value + 2.0 / 4.0 * (max_value - min_value),
+                        min_value + 3.0 / 4.0 * (max_value - min_value),
+                        min_value + 4.0 / 4.0 * (max_value - min_value),
+                });
 
+    }
     // map values to colors
     for (auto v: mesh->vertices()) {
         color_prop[v] = value_to_color(prop[v], min_value, max_value);
@@ -309,7 +314,11 @@ void Meshiew::initShaders() {
     vectorfield_renderers = {
             new VectorfieldRenderer(Eigen::Vector3f(1.0, 0.0, 0.0)),
             new VectorfieldRenderer(Eigen::Vector3f(0.0, 1.0, 0.0)),
-	    new VectorfieldRenderer(Eigen::Vector3f(0.0, 0.0, 1.0)),
+            new VectorfieldRenderer(Eigen::Vector3f(0.0, 0.0, 1.0)),
+    };
+
+    point_cloud_renderers = {
+            new PointCloudRenderer(),
     };
 
     for (const auto &lr : line_renderers) {
@@ -348,7 +357,11 @@ void Meshiew::initShaders() {
         vr->init();
         this->add_renderer(vr);
     }
-
+    for (const auto &pcr : point_cloud_renderers) {
+        pcr->setVisible(false);
+        pcr->init();
+        this->add_renderer(pcr);
+    }
 }
 
 void Meshiew::initModel() {
@@ -434,6 +447,11 @@ void Meshiew::initModel() {
         vr->set_scaling(0.1f);
     }
 
+    for (const auto &pcr : point_cloud_renderers) {
+        pcr->set_color(Eigen::Vector3f(1.0, 1.0, 1.0));
+        pcr->show_points(mesh_points);
+    }
+
 }
 
 Point Meshiew::computeCenter(Surface_mesh *mesh) {
@@ -446,6 +464,16 @@ Point Meshiew::computeCenter(Surface_mesh *mesh) {
 
 void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *info) {
     using namespace nanogui;
+
+    color_coding_window = new ColorCodingWindow(this, {
+            Eigen::Vector3f(0, 0, 1),
+            Eigen::Vector3f(0, 1, 1),
+            Eigen::Vector3f(0, 1, 0),
+            Eigen::Vector3f(1, 1, 0),
+            Eigen::Vector3f(1, 0, 0),
+    });
+    color_coding_window->setVisible(false);
+
     auto vp = mesh.vertex_properties();
     bool mesh_has_color = std::find(vp.begin(), vp.end(), "color") != vp.end();
     Button *b;
@@ -478,6 +506,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = NORMAL;
+        this->color_coding_window->setVisible(false);
     });
 
     b = new Button(c, "Color Coding");
@@ -485,6 +514,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     b->setFlags(Button::RadioButton);
     b->setCallback([this]() {
         this->color_mode = COLOR_CODE;
+        this->color_coding_window->setVisible(true);
     });
 
     b = new Button(c, "Mesh Color Property");
@@ -492,6 +522,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     b->setFlags(Button::RadioButton);
     b->setEnabled(mesh_has_color);
     b->setCallback([this]() {
+        this->color_coding_window->setVisible(false);
         auto color = mesh.get_vertex_property<surface_mesh::Color>("color");
         MatrixXf color_mat(3, mesh.n_vertices());
 
@@ -726,7 +757,36 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         });
     }
 
-    auto vr_popup_btn = new PopupButton(control, "Vectorfield");
+    auto pcr_popup_btn = new PopupButton(control, "Point Cloud");
+    pp = pcr_popup_btn->popup();
+    pp->setLayout(new GroupLayout());
+    counter = 1;
+    for (const auto &pcr : point_cloud_renderers) {
+        stringstream ss;
+        ss << "Point Cloud Renderer " << counter++;
+        auto btn = new PopupButton(pp, ss.str());
+        btn->popup()->setLayout(new GroupLayout());
+
+        (new CheckBox(btn->popup(), "Enabled"))->setCallback([this, pcr](bool value) {
+            pcr->setVisible(value);
+        });
+
+        new Label(btn->popup(), "Point Size");
+        auto slider = new Slider(btn->popup());
+        slider->setValue(0.2);
+        slider->setCallback([this, pcr](float value) {
+            pcr->set_point_size(std::max(0.1f, 10.f * value));
+        });
+
+        new Label(btn->popup(), "Point Color");
+        auto cp = new ColorPicker(btn->popup(), Eigen::Vector3f(1.0, 1.0, 1.0));
+        cp->setFixedSize({100, 20});
+        cp->setCallback([pcr](const Color &c) {
+            pcr->set_color(c.head<3>());
+        });
+    }
+
+    auto vr_popup_btn = new PopupButton(control, "Vector Field");
     pp = vr_popup_btn->popup();
     pp->setLayout(new GroupLayout());
     counter = 1;

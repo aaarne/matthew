@@ -11,6 +11,8 @@
 #include <vectorfield_renderer.h>
 #include "matthew.h"
 #include "line_renderer.h"
+#include "point_cloud_renderer.h"
+#include "color_window.h"
 
 class Meshiew : public Matthew {
     friend class Matthew;
@@ -84,6 +86,8 @@ protected:
     std::vector<std::string> selectable_vector_properties;
     std::map<std::string, std::string> property_map;
 
+    ColorCodingWindow *color_coding_window;
+
     Eigen::Vector3f base_color;
     COLOR_MODE color_mode = NORMAL;
     Eigen::Vector3f edge_color;
@@ -116,6 +120,7 @@ protected:
 
     std::vector<PointRenderer*> point_renderers;
     std::vector<VectorfieldRenderer*> vectorfield_renderers;
+    std::vector<PointCloudRenderer*> point_cloud_renderers;
 
     Timer t;
     SimulinkReceiver *receiver;

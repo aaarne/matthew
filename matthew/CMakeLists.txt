@@ -1,5 +1,5 @@
 add_executable(matthew main.cpp)
-add_library(matthewlib matthew.cpp meshiew.cpp pointiew.cpp)
+add_library(matthewlib matthew.cpp meshiew.cpp pointiew.cpp color_window.cpp)
 target_include_directories(matthewlib PUBLIC
         ${NANOGUI_EXTRA_INCS}
         ${CMAKE_CURRENT_SOURCE_DIR})
