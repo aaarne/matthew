@@ -8,6 +8,7 @@
 #include <point_renderer.h>
 #include <timercpp.h>
 #include <simulink_receiver.h>
+#include <vectorfield_renderer.h>
 #include "matthew.h"
 #include "line_renderer.h"
 
@@ -79,7 +80,8 @@ protected:
     Point mesh_center;
     float dist_max;
 
-    std::vector<std::string> selectable_properties;
+    std::vector<std::string> selectable_scalar_properties;
+    std::vector<std::string> selectable_vector_properties;
     std::map<std::string, std::string> property_map;
 
     Eigen::Vector3f base_color;
@@ -87,11 +89,8 @@ protected:
     Eigen::Vector3f edge_color;
     Eigen::Vector3f light_color;
     nanogui::GLShader mShader;
-    nanogui::GLShader mShaderNormals;
 
     Eigen::MatrixXf mesh_points;
-    bool normals = false;
-    nanogui::PopupButton *popupCurvature;
     nanogui::Window *window;
     bool wireframe = false;
     bool broken_normals = false;
@@ -109,11 +108,13 @@ protected:
     };
 
     std::shared_ptr<LineRenderer> boundary_renderer;
+    std::shared_ptr<VectorfieldRenderer> normals_renderer;
 
     std::vector<LineRenderer*> line_renderers;
     std::map<LineRenderer*, line_renderer_settings> line_renderer_settings;
 
     std::vector<PointRenderer*> point_renderers;
+    std::vector<VectorfieldRenderer*> vectorfield_renderers;
 
     Timer t;
     SimulinkReceiver *receiver;
