@@ -94,6 +94,7 @@ protected:
     nanogui::Window *window;
     bool wireframe = false;
     bool broken_normals = false;
+    bool hide_mesh = false;
     Surface_mesh mesh;
 
     int n_boundary_points;

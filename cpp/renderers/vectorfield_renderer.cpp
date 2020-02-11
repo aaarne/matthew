@@ -13,6 +13,8 @@ void VectorfieldRenderer::init() {
 
 void VectorfieldRenderer::do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) {
     shader.bind();
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
     if (updated) {
         shader.setUniform("scaling", this->scaling);
         shader.uploadAttrib("position", this->points);

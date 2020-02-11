@@ -74,7 +74,9 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     mShader.setUniform("intensity", base_color);
     mShader.setUniform("light_color", light_color);
     mShader.setUniform("color_mode", (int) color_mode);
-    mShader.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
+    if (not hide_mesh) {
+        mShader.drawIndexed(GL_TRIANGLES, 0, mesh.n_faces());
+    }
 
     if (wireframe) {
         glDisable(GL_POLYGON_OFFSET_FILL);
@@ -253,7 +255,7 @@ void Meshiew::calc_mean_curvature() {
             laplace += e_weight[e] * (mesh.position(v2) - mesh.position(v));
         }
         v_laplacian[v] = laplace / acc;
-        v_curvature[v] = norm(laplace/acc);
+        v_curvature[v] = norm(laplace / acc);
     }
 }
 
@@ -448,6 +450,10 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     Button *b;
 
     new Label(control, "Mesh Graph");
+    (new CheckBox(control, "Hide Mesh"))->setCallback([this](bool value) {
+        this->hide_mesh = value;
+    });
+
     (new CheckBox(control, "Wireframe"))->setCallback([this](bool wireframe) {
         this->wireframe = wireframe;
     });
@@ -604,7 +610,6 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     line_popup->setLayout(new GroupLayout());
 
     int counter = 1;
-
     auto trajectory_files = this->additional_data_files("traj");
 
     for (const auto &lr : line_renderers) {
@@ -724,7 +729,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         new Label(btn->popup(), "Scaling");
         auto slider = new Slider(btn->popup());
         slider->setValue(0.1);
-        slider->setCallback([vr] (float value) {
+        slider->setCallback([vr](float value) {
             vr->set_scaling(value);
         });
 

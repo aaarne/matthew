@@ -17,7 +17,7 @@ using namespace std;
 using namespace Eigen;
 
 Matthew::Matthew(bool fs) :
-        nanogui::Screen(Eigen::Vector2i(1024, 768), "Matthew", true, fs), demo_mode(fs) {
+        nanogui::Screen(Eigen::Vector2i(1680, 1050), "Matthew", true, fs), demo_mode(fs) {
 }
 
 bool Matthew::has_ending(std::string const &fullString, std::string const &ending) {
