@@ -242,16 +242,18 @@ void Meshiew::calc_mean_curvature() {
     Surface_mesh::Edge_property<Scalar> e_weight = mesh.edge_property<Scalar>("e:weight", 0);
     Surface_mesh::Vertex_property<Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
     Point laplace(0.0);
+    float acc = 0;
 
     for (const auto &v : mesh.vertices()) {
         laplace = 0;
+        acc = 0;
         for (const auto &v2 : mesh.vertices(v)) {
             Surface_mesh::Edge e = mesh.find_edge(v, v2);
+            acc += e_weight[e];
             laplace += e_weight[e] * (mesh.position(v2) - mesh.position(v));
         }
-        laplace *= v_weight[v];
-        v_laplacian[v] = laplace;
-        v_curvature[v] = norm(laplace);
+        v_laplacian[v] = laplace / acc;
+        v_curvature[v] = norm(laplace/acc);
     }
 }
 
