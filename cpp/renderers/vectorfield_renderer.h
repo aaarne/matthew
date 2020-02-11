@@ -20,6 +20,7 @@ public:
     void set_color(const Eigen::Vector3f &color);
     void set_scaling(float scaling);
     float get_scaling() const {return this->scaling;}
+    Eigen::Vector3f get_color() const {return this->color;}
 
 protected:
     void do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) override;

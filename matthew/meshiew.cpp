@@ -748,7 +748,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         });
 
         new Label(btn->popup(), "Vector Color");
-        auto cp = new ColorPicker(btn->popup(), Eigen::Vector3f(1.0, 0.0, 0.0));
+        auto cp = new ColorPicker(btn->popup(), vr->get_color());
         cp->setFixedSize({100, 20});
         cp->setCallback([vr](const Color &c) {
             vr->set_color(c.head<3>());
