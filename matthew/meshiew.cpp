@@ -37,30 +37,61 @@ void Meshiew::calc_weights() {
     calc_vertices_weights();
 }
 
+template<typename T>
+static inline double Lerp(T v0, T v1, T t)
+{
+    return (1 - t)*v0 + t*v1;
+}
+
+template<typename T>
+static inline std::vector<T> Quantile(const std::vector<T>& inData, const std::vector<T>& probs)
+{
+    if (inData.empty())
+    {
+        return std::vector<T>();
+    }
+
+    if (1 == inData.size())
+    {
+        return std::vector<T>(1, inData[0]);
+    }
+
+    std::vector<T> data = inData;
+    std::sort(data.begin(), data.end());
+    std::vector<T> quantiles;
+
+    for (size_t i = 0; i < probs.size(); ++i)
+    {
+        T poi = Lerp<T>(-0.5, data.size() - 0.5, probs[i]);
+
+        size_t left = std::max(int64_t(std::floor(poi)), int64_t(0));
+        size_t right = std::min(int64_t(std::ceil(poi)), int64_t(data.size() - 1));
+
+        T datLeft = data.at(left);
+        T datRight = data.at(right);
+
+        T quantile = Lerp<T>(datLeft, datRight, poi - left);
+
+        quantiles.push_back(quantile);
+    }
+
+    return quantiles;
+}
+
 void Meshiew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_mesh *mesh,
                            Surface_mesh::Vertex_property<surface_mesh::Color> color_prop, int bound) {
     std::vector<Scalar> values = prop.vector();
-
-    // discard upper and lower bound
-    unsigned int n = values.size() - 1;
-    unsigned int i = n / bound;
     std::sort(values.begin(), values.end());
-    Scalar min_value = values[i], max_value = values[n - 1 - i];
+
+    auto quantiles = Quantile<float>(values, {0., 1./6, 1./3, 1./2, 2./3, 5./6, 1.});
 
     if (color_coding_window) {
-        color_coding_window->update_code(
-                {
-                        min_value + 0.0 / 4.0 * (max_value - min_value),
-                        min_value + 1.0 / 4.0 * (max_value - min_value),
-                        min_value + 2.0 / 4.0 * (max_value - min_value),
-                        min_value + 3.0 / 4.0 * (max_value - min_value),
-                        min_value + 4.0 / 4.0 * (max_value - min_value),
-                });
-
+        std::vector<double> v(quantiles.begin(), quantiles.end());
+        color_coding_window->update_code(v);
     }
     // map values to colors
     for (auto v: mesh->vertices()) {
-        color_prop[v] = value_to_color(prop[v], min_value, max_value);
+        color_prop[v] = value_to_color(prop[v], quantiles[1], quantiles[5], quantiles[0], quantiles[6]);
     }
 }
 
@@ -95,20 +126,22 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     }
 }
 
-surface_mesh::Color Meshiew::value_to_color(Scalar value, Scalar min_value, Scalar max_value) {
-    Scalar v0, v1, v2, v3, v4;
+surface_mesh::Color Meshiew::value_to_color(Scalar value, Scalar min_value, Scalar max_value, Scalar bound_min, Scalar bound_max) {
+    Scalar v0, v1, v2, v3, v4, vout0, vout1;
+    vout0 = (min_value == bound_min) ? 1.0 : (value - bound_min)/(min_value - bound_min);
     v0 = min_value + 0.0 / 4.0 * (max_value - min_value);
     v1 = min_value + 1.0 / 4.0 * (max_value - min_value);
     v2 = min_value + 2.0 / 4.0 * (max_value - min_value);
     v3 = min_value + 3.0 / 4.0 * (max_value - min_value);
     v4 = min_value + 4.0 / 4.0 * (max_value - min_value);
+    vout1 = (bound_max == max_value) ? 0.0 : (value - max_value)/(bound_max - max_value);
 
     surface_mesh::Color col(1.0f, 1.0f, 1.0f);
 
     if (value < v0) {
-        col = surface_mesh::Color(0, 0, 1);
+        col = surface_mesh::Color(0, 0, vout0);
     } else if (value > v4) {
-        col = surface_mesh::Color(1, 0, 0);
+        col = surface_mesh::Color(1, vout1, vout1);
     } else if (value <= v2) {
         if (value <= v1) { // [v0, v1]
             Scalar u = (value - v0) / (v1 - v0);
@@ -466,11 +499,13 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     using namespace nanogui;
 
     color_coding_window = new ColorCodingWindow(this, {
+            Eigen::Vector3f(0, 0, 0),
             Eigen::Vector3f(0, 0, 1),
             Eigen::Vector3f(0, 1, 1),
             Eigen::Vector3f(0, 1, 0),
             Eigen::Vector3f(1, 1, 0),
             Eigen::Vector3f(1, 0, 0),
+            Eigen::Vector3f(1, 1, 1),
     });
     color_coding_window->setVisible(false);
 
@@ -574,6 +609,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     new Label(c, "Color Coding (Scalar)");
     (new ComboBox(c, selectable_scalar_properties))->setCallback([this](int index) {
         auto prop = property_map[selectable_scalar_properties[index]];
+        this->color_coding_window->setVisible(true);
         upload_color(prop);
     });
 
@@ -587,6 +623,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             vec << prop[v].x, prop[v].y, prop[v].z;
             len_prop[v] = vec.norm();
         }
+        this->color_coding_window->setVisible(true);
         upload_color(prop_name);
     });
 
@@ -900,7 +937,7 @@ void Meshiew::upload_color(const std::string &prop_name) {
     mesh.update_vertex_normals();
     auto color = mesh.vertex_property<Color>("v:tmp_color_coding", Color(1, 1, 1));
     auto prop = mesh.vertex_property<Scalar>(prop_name);
-    color_coding(prop, &mesh, color);
+    color_coding(prop, &mesh, color, 20);
 
     MatrixXf color_mat(3, mesh.n_vertices());
 

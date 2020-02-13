@@ -71,7 +71,7 @@ protected:
     void color_coding(Surface_mesh::Vertex_property <Scalar> prop, Surface_mesh *mesh,
                       Surface_mesh::Vertex_property <surface_mesh::Color> color_prop, int bound = 20);
 
-    surface_mesh::Color value_to_color(Scalar value, Scalar min_value, Scalar max_value);
+    surface_mesh::Color value_to_color(Scalar value, Scalar min_value, Scalar max_value, Scalar bound_min, Scalar bound_max);
 
     void upload_color(const std::string &prop_name);
 
