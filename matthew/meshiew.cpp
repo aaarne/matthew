@@ -83,7 +83,15 @@ void Meshiew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_m
     std::vector<Scalar> values = prop.vector();
     std::sort(values.begin(), values.end());
 
-    auto quantiles = Quantile<float>(values, {0., 1./6, 1./3, 1./2, 2./3, 5./6, 1.});
+    auto quantiles = Quantile<float>(values, {
+        0.,
+        0.1,
+        0.33,
+        0.5,
+        0.66,
+        0.9,
+        1.
+    });
 
     if (color_coding_window) {
         std::vector<double> v(quantiles.begin(), quantiles.end());

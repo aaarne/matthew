@@ -10,7 +10,7 @@ using namespace nanogui;
 
 ColorCodingWindow::ColorCodingWindow(nanogui::Widget *parent, const std::vector<Eigen::Vector3f> &colors)
         : nanogui::Window(parent, "Color Code") {
-    auto grid = new GridLayout(Orientation::Horizontal, 2, Alignment::Minimum, 15, 5);
+    auto grid = new GridLayout(Orientation::Horizontal, 4, Alignment::Minimum, 15, 5);
     this->setLayout(grid);
     this->setVisible(true);
     this->setPosition(Vector2i(15, 700));
