@@ -139,7 +139,7 @@ void LineRenderer::do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) 
         lineShader.bind();
         lineShader.setUniform("MV", mv);
         lineShader.setUniform("P", p);
-        lineShader.drawArray((strip_mode) ? GL_LINE_STRIP : GL_LINES, 0, line.size());
+        lineShader.drawArray((strip_mode) ? GL_LINE_STRIP : GL_LINES, 0, line.cols());
     }
 }
 

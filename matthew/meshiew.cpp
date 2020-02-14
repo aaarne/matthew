@@ -38,21 +38,17 @@ void Meshiew::calc_weights() {
 }
 
 template<typename T>
-static inline double Lerp(T v0, T v1, T t)
-{
-    return (1 - t)*v0 + t*v1;
+static inline double Lerp(T v0, T v1, T t) {
+    return (1 - t) * v0 + t * v1;
 }
 
 template<typename T>
-static inline std::vector<T> Quantile(const std::vector<T>& inData, const std::vector<T>& probs)
-{
-    if (inData.empty())
-    {
+static inline std::vector<T> Quantile(const std::vector<T> &inData, const std::vector<T> &probs) {
+    if (inData.empty()) {
         return std::vector<T>();
     }
 
-    if (1 == inData.size())
-    {
+    if (1 == inData.size()) {
         return std::vector<T>(1, inData[0]);
     }
 
@@ -60,8 +56,7 @@ static inline std::vector<T> Quantile(const std::vector<T>& inData, const std::v
     std::sort(data.begin(), data.end());
     std::vector<T> quantiles;
 
-    for (size_t i = 0; i < probs.size(); ++i)
-    {
+    for (size_t i = 0; i < probs.size(); ++i) {
         T poi = Lerp<T>(-0.5, data.size() - 0.5, probs[i]);
 
         size_t left = std::max(int64_t(std::floor(poi)), int64_t(0));
@@ -84,13 +79,13 @@ void Meshiew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_m
     std::sort(values.begin(), values.end());
 
     auto quantiles = Quantile<float>(values, {
-        0.,
-        0.1,
-        0.33,
-        0.5,
-        0.66,
-        0.9,
-        1.
+            0.,
+            0.01,
+            0.33,
+            0.5,
+            0.66,
+            0.99,
+            1.
     });
 
     if (color_coding_window) {
@@ -134,15 +129,16 @@ void Meshiew::draw(Eigen::Matrix4f mv, Matrix4f p) {
     }
 }
 
-surface_mesh::Color Meshiew::value_to_color(Scalar value, Scalar min_value, Scalar max_value, Scalar bound_min, Scalar bound_max) {
+surface_mesh::Color
+Meshiew::value_to_color(Scalar value, Scalar min_value, Scalar max_value, Scalar bound_min, Scalar bound_max) {
     Scalar v0, v1, v2, v3, v4, vout0, vout1;
-    vout0 = (min_value == bound_min) ? 1.0 : (value - bound_min)/(min_value - bound_min);
+    vout0 = (min_value == bound_min) ? 1.0 : (value - bound_min) / (min_value - bound_min);
     v0 = min_value + 0.0 / 4.0 * (max_value - min_value);
     v1 = min_value + 1.0 / 4.0 * (max_value - min_value);
     v2 = min_value + 2.0 / 4.0 * (max_value - min_value);
     v3 = min_value + 3.0 / 4.0 * (max_value - min_value);
     v4 = min_value + 4.0 / 4.0 * (max_value - min_value);
-    vout1 = (bound_max == max_value) ? 0.0 : (value - max_value)/(bound_max - max_value);
+    vout1 = (bound_max == max_value) ? 0.0 : (value - max_value) / (bound_max - max_value);
 
     surface_mesh::Color col(1.0f, 1.0f, 1.0f);
 
@@ -521,22 +517,10 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     bool mesh_has_color = std::find(vp.begin(), vp.end(), "color") != vp.end();
     Button *b;
 
-    new Label(control, "Mesh Graph");
-    (new CheckBox(control, "Hide Mesh"))->setCallback([this](bool value) {
-        this->hide_mesh = value;
-    });
-
-    (new CheckBox(control, "Wireframe"))->setCallback([this](bool wireframe) {
-        this->wireframe = wireframe;
-    });
-
-    (new CheckBox(control, "Boundary"))->setCallback([this](bool value) {
-        this->boundary_renderer->setVisible(value);
-    });
-
-    (new CheckBox(control, "Normals"))->setCallback([this](bool normals) {
-        this->normals_renderer->setVisible(normals);
-    });
+    new Label(control, "Property Renderers");
+    auto renderer_popup_btn = new PopupButton(control, "Renderers");
+    renderer_popup_btn->popup()->setLayout(new GroupLayout());
+    auto rr_pp = renderer_popup_btn->popup();
 
 
     new Label(control, "Shading");
@@ -692,10 +676,24 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     cb->callback()(true);
 
     light_model_pp->setLayout(new GroupLayout());
+    new Label(control, "Mesh Graph");
+    (new CheckBox(control, "Hide Mesh"))->setCallback([this](bool value) {
+        this->hide_mesh = value;
+    });
 
-    new Label(control, "Property Renderers");
+    (new CheckBox(control, "Wireframe"))->setCallback([this](bool wireframe) {
+        this->wireframe = wireframe;
+    });
 
-    auto line_popup_btn = new PopupButton(control, "Line");
+    (new CheckBox(control, "Boundary"))->setCallback([this](bool value) {
+        this->boundary_renderer->setVisible(value);
+    });
+
+    (new CheckBox(control, "Normals"))->setCallback([this](bool normals) {
+        this->normals_renderer->setVisible(normals);
+    });
+
+    auto line_popup_btn = new PopupButton(rr_pp, "Line");
     auto line_popup = line_popup_btn->popup();
     line_popup->setLayout(new GroupLayout());
 
@@ -776,7 +774,13 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         });
     }
 
-    auto pr_popup_btn = new PopupButton(control, "Point");
+    (new Button(line_popup, "Hide all"))->setCallback([this]() {
+        for (const auto &lr : line_renderers) {
+            lr->setVisible(false);
+        }
+    });
+
+    auto pr_popup_btn = new PopupButton(rr_pp, "Point");
     auto pp = pr_popup_btn->popup();
     pp->setLayout(new GroupLayout());
 
@@ -802,7 +806,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         });
     }
 
-    auto pcr_popup_btn = new PopupButton(control, "Point Cloud");
+    auto pcr_popup_btn = new PopupButton(rr_pp, "Point Cloud");
     pp = pcr_popup_btn->popup();
     pp->setLayout(new GroupLayout());
     counter = 1;
@@ -831,7 +835,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         });
     }
 
-    auto vr_popup_btn = new PopupButton(control, "Vector Field");
+    auto vr_popup_btn = new PopupButton(rr_pp, "Vector Field");
     pp = vr_popup_btn->popup();
     pp->setLayout(new GroupLayout());
     counter = 1;
@@ -863,14 +867,28 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         auto combo = new ComboBox(btn->popup(), selectable_vector_properties);
         combo->setCallback([this, vr](int index) {
             auto prop = mesh.get_vertex_property<Vec3>(selectable_vector_properties[index]);
-            Eigen::MatrixXf vecs(3, mesh_points.cols());
+            long n_boundary_vertices = std::accumulate(mesh.vertices().begin(), mesh.vertices().end(), 0,
+                                                       [this](long i, const Vertex &v) {
+                                                           return i + (mesh.is_boundary(v) ? 1 : 0);
+                                                       });
+            Eigen::MatrixXf vecs(3, mesh_points.cols() - n_boundary_vertices);
+            Eigen::MatrixXf points(3, mesh_points.cols() - n_boundary_vertices);
             int j = 0;
             for (const auto &v : mesh.vertices()) {
+                if (mesh.is_boundary(v)) continue;
+                auto p = mesh.position(v);
+                points.col(j) << p.x, p.y, p.z;
                 vecs.col(j++) << prop[v].x, prop[v].y, prop[v].z;
             }
-            vr->show_vectorfield(mesh_points, vecs);
+            vr->show_vectorfield(points, vecs);
         });
     }
+
+    (new Button(pp, "Hide all"))->setCallback([this](){
+        for (const auto &vfr : vectorfield_renderers) {
+            vfr->setVisible(false);
+        }
+    });
 
 
     bool closed = true;
