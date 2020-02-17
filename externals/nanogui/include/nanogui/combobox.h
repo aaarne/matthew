@@ -29,6 +29,8 @@ public:
     /// Create a new combo box with the given items
     ComboBox(Widget *parent, const std::vector<std::string> &items);
 
+    ComboBox(Widget *parent, const std::vector<std::string> &items, int n_per_col);
+
     /**
      * \brief Create a new combo box with the given items, providing both short and
      * long descriptive labels for each item
@@ -43,6 +45,7 @@ public:
     void setSelectedIndex(int idx);
 
     void setItems(const std::vector<std::string> &items, const std::vector<std::string> &itemsShort);
+
     void setItems(const std::vector<std::string> &items) { setItems(items, items); }
     const std::vector<std::string> &items() const { return mItems; }
     const std::vector<std::string> &itemsShort() const { return mItemsShort; }
@@ -52,6 +55,7 @@ public:
     virtual void save(Serializer &s) const override;
     virtual bool load(Serializer &s) override;
 protected:
+    int maxPerCol = 0;
     std::vector<std::string> mItems, mItemsShort;
     std::function<void(int)> mCallback;
     int mSelectedIndex;

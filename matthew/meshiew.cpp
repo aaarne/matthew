@@ -214,6 +214,8 @@ void Meshiew::calc_edges_weights() {
 }
 
 void Meshiew::calc_vertices_weights() {
+    selectable_scalar_properties.emplace_back("Vertex Weight");
+    property_map["Vertex Weight"] = "v:weight";
     Surface_mesh::Face_around_vertex_circulator vf_c, vf_end;
     Surface_mesh::Vertex_around_face_circulator fv_c;
     Scalar area;
@@ -286,18 +288,16 @@ void Meshiew::calc_mean_curvature() {
     Surface_mesh::Edge_property<Scalar> e_weight = mesh.edge_property<Scalar>("e:weight", 0);
     Surface_mesh::Vertex_property<Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
     Point laplace(0.0);
-    float acc = 0;
 
     for (const auto &v : mesh.vertices()) {
         laplace = 0;
-        acc = 0;
         for (const auto &v2 : mesh.vertices(v)) {
             Surface_mesh::Edge e = mesh.find_edge(v, v2);
-            acc += e_weight[e];
             laplace += e_weight[e] * (mesh.position(v2) - mesh.position(v));
         }
-        v_laplacian[v] = laplace / acc;
-        v_curvature[v] = norm(laplace / acc);
+        laplace *= v_weight[v];
+        v_laplacian[v] = laplace;
+        v_curvature[v] = norm(laplace);
     }
 }
 
@@ -599,14 +599,14 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
     });
 
     new Label(c, "Color Coding (Scalar)");
-    (new ComboBox(c, selectable_scalar_properties))->setCallback([this](int index) {
+    (new ComboBox(c, selectable_scalar_properties, 6))->setCallback([this](int index) {
         auto prop = property_map[selectable_scalar_properties[index]];
         this->color_coding_window->setVisible(true);
         upload_color(prop);
     });
 
     new Label(c, "Color Coding (Vector Length)");
-    (new ComboBox(c, selectable_vector_properties))->setCallback([this](int index) {
+    (new ComboBox(c, selectable_vector_properties, 6))->setCallback([this](int index) {
         auto prop = mesh.vertex_property<Vec3>(selectable_vector_properties[index]);
         const string prop_name = "v:vector_length_tmp";
         auto len_prop = mesh.vertex_property<Scalar>(prop_name);
@@ -884,7 +884,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         });
     }
 
-    (new Button(pp, "Hide all"))->setCallback([this](){
+    (new Button(pp, "Hide all"))->setCallback([this]() {
         for (const auto &vfr : vectorfield_renderers) {
             vfr->setVisible(false);
         }
@@ -1061,3 +1061,4 @@ void Meshiew::get_ready_to_run() {
         }
     }, 0);
 }
+

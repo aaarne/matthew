@@ -19,6 +19,11 @@ NAMESPACE_BEGIN(nanogui)
 ComboBox::ComboBox(Widget *parent) : PopupButton(parent), mSelectedIndex(0) {
 }
 
+ComboBox::ComboBox(Widget *parent, const std::vector<std::string> &items, int n_per_col)
+    : PopupButton(parent), mSelectedIndex(0), maxPerCol(n_per_col) {
+    setItems(items);
+}
+
 ComboBox::ComboBox(Widget *parent, const std::vector<std::string> &items)
     : PopupButton(parent), mSelectedIndex(0) {
     setItems(items);
@@ -47,7 +52,16 @@ void ComboBox::setItems(const std::vector<std::string> &items, const std::vector
         mSelectedIndex = 0;
     while (mPopup->childCount() != 0)
         mPopup->removeChild(mPopup->childCount()-1);
-    mPopup->setLayout(new GroupLayout(10));
+    if (maxPerCol) {
+        mPopup->setLayout(new GridLayout{
+            Orientation::Vertical,
+            maxPerCol,
+            Alignment::Minimum,
+            15,
+            5});
+    } else {
+        mPopup->setLayout(new GroupLayout(10));
+    }
     int index = 0;
     for (const auto &str: items) {
         Button *button = new Button(mPopup, str);
@@ -94,5 +108,6 @@ bool ComboBox::load(Serializer &s) {
     if (!s.get("selectedIndex", mSelectedIndex)) return false;
     return true;
 }
+
 
 NAMESPACE_END(nanogui)
