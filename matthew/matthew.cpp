@@ -83,7 +83,7 @@ void Matthew::run() {
     this->renderers.push_back(grid);
 
     initGUI();
-    get_ready_to_run();
+    init_timer();
 }
 
 bool Matthew::keyboardEvent(int key, int scancode, int action, int modifiers) {

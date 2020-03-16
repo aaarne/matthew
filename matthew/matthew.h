@@ -39,7 +39,7 @@ protected:
 
     void initGUI();
 
-    virtual void get_ready_to_run() {};
+    virtual void init_timer() {};
 
     virtual void initShaders() = 0;
 

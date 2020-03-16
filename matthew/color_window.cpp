@@ -4,6 +4,7 @@
 
 #include <nanogui/layout.h>
 #include <nanogui/button.h>
+#include <iostream>
 #include "color_window.h"
 
 using namespace nanogui;
@@ -32,7 +33,11 @@ ColorCodingWindow::ColorCodingWindow(nanogui::Widget *parent, const std::vector<
 }
 
 void ColorCodingWindow::update_code(const std::vector<double> &levels) {
-    for (int i = 0; i<boxes.size(); i++) {
-        boxes[i]->setValue(levels[i]);
+    if (boxes.size() == levels.size()) {
+        for (int i = 0; i<boxes.size(); i++) {
+            boxes[i]->setValue(levels[i]);
+        }
+    } else {
+        std::cerr << "Something's wrong, more levels than boxes..." << std::endl;
     }
 }

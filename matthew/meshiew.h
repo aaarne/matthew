@@ -38,7 +38,7 @@ protected:
 
     void calc_edges_weights();
 
-    void get_ready_to_run() override;
+    void init_timer() override;
 
     void calc_vertices_weights();
 
@@ -53,6 +53,8 @@ protected:
     void calc_boundary();
 
     void create_gui_elements(nanogui::Window *control, nanogui::Window *info) override;
+
+    void create_simulink_receiver(const std::string &host, int port, PointRenderer *pr);
 
     Eigen::Vector3f get_model_dimensions() override;
 
@@ -123,7 +125,7 @@ protected:
     std::vector<PointCloudRenderer*> point_cloud_renderers;
 
     Timer t;
-    SimulinkReceiver *receiver;
+    std::vector<std::pair<std::shared_ptr<SimulinkReceiver>, PointRenderer*>> receivers;
 };
 
 

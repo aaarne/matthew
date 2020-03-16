@@ -804,6 +804,12 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
                 }
             }
         });
+
+        auto simulink_btn = new Button(btn->popup(), "Connect to Simulink");
+        simulink_btn->setCallback([this, pr, simulink_btn]() {
+            simulink_btn->setEnabled(false);
+            create_simulink_receiver("localhost", 2222, pr);
+        });
     }
 
     auto pcr_popup_btn = new PopupButton(rr_pp, "Point Cloud");
@@ -1042,17 +1048,17 @@ void Meshiew::calc_boundary() {
     boundary_renderer->show_line_segments(points);
 }
 
-void Meshiew::get_ready_to_run() {
-    receiver = new SimulinkReceiver("localhost", 2222);
-
+void Meshiew::init_timer() {
     t.setInterval([this]() {
-        auto values = receiver->read_doubles(3);
-        for (const auto &pr : point_renderers) {
+        for (const auto &pair : receivers) {
+            auto receiver = pair.first;
+            auto pr = pair.second;
+            auto values = receiver->read_doubles(3);
             surface_mesh::Point p(
                     values[0],
                     values[1],
                     values[2]);
-            pr->setPoint(p);
+            pair.second->setPoint(p);
         }
         for (const auto &lr : line_renderers) {
             if (line_renderer_settings[lr].point_trace_mode) {
@@ -1060,5 +1066,9 @@ void Meshiew::get_ready_to_run() {
             }
         }
     }, 0);
+}
+
+void Meshiew::create_simulink_receiver(const std::string &host, int port, PointRenderer *pr) {
+    receivers.emplace_back(std::make_shared<SimulinkReceiver>(host, port), pr);
 }
 
