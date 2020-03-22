@@ -19,6 +19,7 @@
 #include <nanogui/combobox.h>
 #include <nanogui/slider.h>
 #include <numeric>
+#include "pcd_reader.h"
 
 #define DEFAULT_AMBIENT 0.3
 #define DEFAULT_DIFFUSE 1.0
@@ -355,6 +356,8 @@ void Meshiew::initShaders() {
     };
 
     point_cloud_renderers = {
+            new PointCloudRenderer(),
+            new PointCloudRenderer(),
             new PointCloudRenderer(),
     };
 
@@ -838,6 +841,14 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         cp->setFixedSize({100, 20});
         cp->setCallback([pcr](const Color &c) {
             pcr->set_color(c.head<3>());
+        });
+
+        new Label(btn->popup(), "Load from File");
+        auto textbox = new TextBox(btn->popup(), "/tmp/pointcloud.pcd");
+
+        (new Button(btn->popup(), "Load"))->setCallback([this, textbox, pcr](){
+            PCDReader reader(textbox->value());
+            pcr->show_points(reader.get_points());
         });
     }
 
