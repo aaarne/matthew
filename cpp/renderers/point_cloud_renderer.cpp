@@ -52,7 +52,8 @@ void PointCloudRenderer::set_colors(const Eigen::MatrixXf &c) {
 }
 
 void PointCloudRenderer::show_points(const Eigen::MatrixXf &p, const Eigen::MatrixXf &colors) {
-    this->show_points(p);
+    this->points = p;
+    this->n = p.cols();
     this->colors = colors;
     this->vertex_color_prop_available = true;
     this->updated = true;

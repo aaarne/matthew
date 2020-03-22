@@ -848,7 +848,11 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
 
         (new Button(btn->popup(), "Load"))->setCallback([this, textbox, pcr](){
             PCDReader reader(textbox->value());
-            pcr->show_points(reader.get_points());
+            if (reader.has_color()) {
+                pcr->show_points(reader.get_points(), reader.get_colors());
+            } else {
+                pcr->show_points(reader.get_points());
+            }
         });
     }
 
