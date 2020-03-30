@@ -38,6 +38,20 @@ protected:
 
     void calc_edges_weights();
 
+    enum REMESHING_TYPE : int {
+        AVERAGE = 0, CURV = 1
+    };
+
+    void remesh(const REMESHING_TYPE &remeshing_type, const int &num_iterations);
+    void calc_target_length(const REMESHING_TYPE &remeshing_type);
+    void split_long_edges();
+    void collapse_short_edges();
+    void equalize_valences();
+
+    void tangential_relaxation();
+
+    void calc_principal_curvature_directions();
+
     void init_timer() override;
 
     void calc_vertices_weights();

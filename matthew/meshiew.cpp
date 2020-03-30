@@ -43,6 +43,280 @@ static inline double Lerp(T v0, T v1, T t) {
     return (1 - t) * v0 + t * v1;
 }
 
+
+void Meshiew::remesh(const REMESHING_TYPE &remeshing_type,
+                     const int &num_iterations) {
+
+    for (int i = 0; i < num_iterations; ++i) {
+        cout << "----------- iteration " << i + 1 << " out of " << num_iterations << " -----------" << endl;
+	calc_target_length(remeshing_type);
+	calc_weights();
+	calc_mean_curvature();
+	calc_uniform_laplacian();
+	calc_gauss_curvature();
+        split_long_edges();
+        collapse_short_edges();
+        equalize_valences();
+        tangential_relaxation();
+    }
+
+    calc_weights();
+    calc_mean_curvature();
+    calc_uniform_laplacian();
+    calc_gauss_curvature();
+}
+
+void Meshiew::calc_target_length(const REMESHING_TYPE &remeshing_type) {
+    Surface_mesh::Vertex_iterator v_it, v_end(mesh.vertices_end());
+    Scalar length;
+
+    Surface_mesh::Vertex_property<Scalar> target_length = mesh.vertex_property<Scalar>("v:length", 0);
+    Surface_mesh::Vertex_property<Scalar> new_target_length = mesh.vertex_property<Scalar>("v:new_length", 0);
+
+    Surface_mesh::Vertex_property<Scalar> max_curvature = mesh.vertex_property<Scalar>("v:max_curvature", 0);
+
+
+    std::vector<double> lengths(mesh.n_edges());
+    for (const auto &e : mesh.edges()) {
+        lengths.push_back(mesh.edge_length(e));
+    }
+
+    const float TARGET_LENGTH = std::accumulate(lengths.begin(), lengths.end(), 0.0) / lengths.size();
+
+    if (remeshing_type == AVERAGE) {
+        for (v_it = mesh.vertices_begin(); v_it != v_end; ++v_it)
+            target_length[*v_it] = TARGET_LENGTH;
+
+    } else if (remeshing_type == CURV) {
+        for (const auto &v : mesh.vertices()) {
+            length = TARGET_LENGTH;
+            if (mesh.is_boundary(v)) {
+                length = TARGET_LENGTH;
+            } else {
+                length = TARGET_LENGTH / max_curvature[v];
+            }
+            target_length[v] = length;
+        }
+
+        const int smoothing_iterations = 5;
+        for (int i = 0; i < smoothing_iterations; i++) {
+            for (const auto &vi : mesh.vertices()) {
+                float local_target_length_avg = 0.f;
+                for (const auto &vj : mesh.vertices(vi)) {
+                    local_target_length_avg += target_length[vj] - target_length[vi];
+                }
+                local_target_length_avg /= mesh.valence(vi);
+                new_target_length[vi] = target_length[vi] + local_target_length_avg;
+                assert(target_length[vi] > 0);
+            }
+
+            for (const auto &v : mesh.vertices()) {
+                target_length[v] = new_target_length[v];
+            }
+
+        }
+
+        float mean_length = 0;
+        for (const auto &v : mesh.vertices()) {
+            mean_length += target_length[v];
+        }
+        mean_length /= mesh.n_vertices();
+
+        const double rescale_factor = TARGET_LENGTH / mean_length;
+        for (const auto &v : mesh.vertices())
+            target_length[v] *= rescale_factor;
+    }
+}
+
+void Meshiew::split_long_edges() {
+    Surface_mesh::Edge_iterator e_it, e_end(mesh.edges_end());
+    Surface_mesh::Vertex v0, v1, v;
+    bool finished;
+    int i;
+    int c = 0;
+
+    const double upper_ratio = 4. / 3;
+
+    Surface_mesh::Vertex_property<Point> normals = mesh.vertex_property<Point>("v:normal");
+    Surface_mesh::Vertex_property<Scalar> target_length = mesh.vertex_property<Scalar>("v:length", 0);
+
+    for (finished = false, i = 0; !finished && i < 100; ++i) {
+        finished = true;
+
+        for (e_it = mesh.edges_begin(); e_it != e_end; ++e_it) {
+            v0 = mesh.vertex(*e_it, 0);
+            v1 = mesh.vertex(*e_it, 1);
+            float desired_length = .5f * target_length[v0] + .5f * target_length[v1];
+            if (mesh.edge_length(*e_it) > upper_ratio * desired_length) {
+                finished = false;
+                v = mesh.split(*e_it, mesh.position(v0) + .5 * (mesh.position(v1) - mesh.position(v0)));
+                normals[v] = .5 * normals[v0] + .5 * normals[v1];
+                target_length[v] = desired_length;
+                c++;
+            }
+        }
+    }
+    cout << "Split " << c << " long edges in " << i << " iterations." << endl;
+}
+
+void Meshiew::collapse_short_edges() {
+    Surface_mesh::Edge_iterator e_it, e_end(mesh.edges_end());
+    Surface_mesh::Vertex v0, v1;
+    Surface_mesh::Halfedge h01, h10, h;
+    bool finished;
+    int i, c = 0;
+
+    const double lower_ratio = 4. / 5;
+
+    Surface_mesh::Vertex_property<Scalar> target_length = mesh.vertex_property<Scalar>("v:length", 0);
+
+    for (finished = false, i = 0; !finished && i < 100; ++i) {
+        finished = true;
+
+        for (e_it = mesh.edges_begin(); e_it != e_end; ++e_it) {
+            if (!mesh.is_deleted(*e_it)) {
+                h01 = mesh.halfedge(*e_it, 0);
+                h10 = mesh.halfedge(*e_it, 1);
+
+                // to vertex give the vertex the halfedge points to
+                v0 = mesh.to_vertex(h10);
+                v1 = mesh.to_vertex(h01);
+
+                float desired_length = .5f * target_length[v0] + .5f * target_length[v1];
+
+                if (mesh.edge_length(*e_it) < lower_ratio * desired_length) {
+
+                    h = Surface_mesh::Halfedge();
+
+                    if (mesh.is_boundary(v0) && !mesh.is_boundary(v1)) {
+                        h = h10;
+                    } else if (!mesh.is_boundary(v0) && mesh.is_boundary(v1)) {
+                        h = h01;
+                    } else {
+                        if (mesh.valence(v0) < mesh.valence(v1)) {
+                            h = h01;
+                        } else if (mesh.valence(v0) > mesh.valence(v1)) {
+                            h = h10;
+                        } else {
+                            if (mesh.is_collapse_ok(h01)) h = h01;
+                            else if (mesh.is_collapse_ok(h10)) h = h10;
+                            else continue;
+                        }
+                    }
+
+                    if (mesh.is_collapse_ok(h)) {
+                        finished = false;
+                        mesh.collapse(h);
+                        c++;
+                    }
+                }
+            }
+        }
+    }
+
+    cout << "Collapsed " << c << " short edges in " << i << " iterations." << endl;
+    mesh.garbage_collection();
+
+    if (i == 100) std::cerr << "collapse break\n";
+}
+
+void Meshiew::equalize_valences() {
+    Surface_mesh::Edge_iterator e_it, e_end(mesh.edges_end());
+    Surface_mesh::Vertex v0, v1, v2, v3;
+    Surface_mesh::Halfedge h;
+    int ve0, ve1, ve2, ve3, ve_before, ve_after;
+    bool finished;
+    int i;
+    int c = 0;
+
+    for (finished = false, i = 0; !finished && i < 100; ++i) {
+        finished = true;
+
+        for (e_it = mesh.edges_begin(); e_it != e_end; ++e_it) {
+            if (!mesh.is_boundary(*e_it) && !mesh.is_deleted(*e_it)) {
+                auto h01 = mesh.halfedge(*e_it, 0);
+                auto h10 = mesh.opposite_halfedge(h01);
+
+                v0 = mesh.to_vertex(h10);
+                v1 = mesh.to_vertex(h01);
+                v2 = mesh.to_vertex(mesh.next_halfedge(h10));
+                v3 = mesh.to_vertex(mesh.next_halfedge(h01));
+
+                assert(mesh.to_vertex(mesh.next_halfedge(mesh.next_halfedge(h10))) == v1);
+                assert(mesh.to_vertex(mesh.next_halfedge(mesh.next_halfedge(h01))) == v0);
+
+                auto compute_deviation = [this](Surface_mesh::Vertex &v) -> int {
+                    int opt = mesh.is_boundary(v) ? 4 : 6;
+                    return mesh.valence(v) - opt;
+                };
+
+                ve0 = compute_deviation(v0);
+                ve1 = compute_deviation(v1);
+                ve2 = compute_deviation(v2);
+                ve3 = compute_deviation(v3);
+
+                auto sqr = [](int i) -> int { return i * i; }; //convenience square function
+                ve_before = sqr(ve0) + sqr(ve1) + sqr(ve2) + sqr(ve3);
+                ve_after = sqr(--ve0) + sqr(--ve1) + sqr(++ve2) + sqr(++ve3);
+
+                if (ve_after < ve_before && mesh.is_flip_ok(*e_it)) {
+                    finished = false;
+                    mesh.flip(*e_it);
+                    c++;
+                }
+            }
+        }
+    }
+
+    cout << "Flipped " << c << " edges in " << i << " iterations." << endl;
+
+    if (i == 100) std::cerr << "flip break\n";
+}
+
+void Meshiew::tangential_relaxation() {
+
+    Surface_mesh::Vertex_iterator v_it, v_end(mesh.vertices_end());
+    Point u, n;
+    Point laplace;
+    int c = 0;
+
+    Surface_mesh::Vertex_property<Point> normals = mesh.vertex_property<Point>("v:normal");
+    Surface_mesh::Vertex_property<Point> update = mesh.vertex_property<Point>("v:update");
+
+// smooth
+    for (int iters = 0; iters < 10; ++iters) {
+        for (v_it = mesh.vertices_begin(); v_it != v_end; ++v_it) {
+            if (!mesh.is_boundary(*v_it)) {
+                laplace = Point(0.0);
+                for (const auto &v1 : mesh.vertices(*v_it)) {
+                    laplace += mesh.position(v1) - mesh.position(*v_it);
+                }
+                laplace /= mesh.valence(*v_it);
+
+                Eigen::Vector3d normal, laplacian, proj;
+                n = normals[*v_it];
+                normal << n.x, n.y, n.z;
+                laplacian << laplace.x, laplace.y, laplace.z;
+
+                Eigen::Hyperplane<double, 3> tangentPlane(normal, 0);
+                proj = tangentPlane.projection(laplacian);
+
+                u = Point(proj(0), proj(1), proj(2));
+
+                update[*v_it] = .1 * u;
+            }
+        }
+
+        for (v_it = mesh.vertices_begin(); v_it != v_end; ++v_it) {
+            if (!mesh.is_boundary(*v_it)) {
+                c++;
+                mesh.position(*v_it) += update[*v_it];
+            }
+        }
+    }
+    cout << "Moved " << c << " vertices." << endl;
+}
+
 template<typename T>
 static inline std::vector<T> Quantile(const std::vector<T> &inData, const std::vector<T> &probs) {
     if (inData.empty()) {
@@ -65,7 +339,6 @@ static inline std::vector<T> Quantile(const std::vector<T> &inData, const std::v
 
         T datLeft = data.at(left);
         T datRight = data.at(right);
-
         T quantile = Lerp<T>(datLeft, datRight, poi - left);
 
         quantiles.push_back(quantile);
@@ -169,6 +442,7 @@ Meshiew::value_to_color(Scalar value, Scalar min_value, Scalar max_value, Scalar
 
 void Meshiew::meshProcess() {
     using namespace surface_mesh;
+
     mesh.update_face_normals();
     mesh.update_vertex_normals();
 
@@ -177,6 +451,7 @@ void Meshiew::meshProcess() {
     calc_uniform_laplacian();
     calc_mean_curvature();
     calc_gauss_curvature();
+    calc_principal_curvature_directions();
     calc_boundary();
 }
 
@@ -281,26 +556,6 @@ void Meshiew::calc_uniform_laplacian() {
     }
 }
 
-void Meshiew::calc_mean_curvature() {
-    selectable_scalar_properties.emplace_back("Mean Curvature");
-    property_map["Mean Curvature"] = "v:curvature";
-    Surface_mesh::Vertex_property<Scalar> v_curvature = mesh.vertex_property<Scalar>("v:curvature", 0);
-    Surface_mesh::Vertex_property<Vec3> v_laplacian = mesh.vertex_property<Vec3>("Laplacian", Vec3(0, 0, 0));
-    Surface_mesh::Edge_property<Scalar> e_weight = mesh.edge_property<Scalar>("e:weight", 0);
-    Surface_mesh::Vertex_property<Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
-    Point laplace(0.0);
-
-    for (const auto &v : mesh.vertices()) {
-        laplace = 0;
-        for (const auto &v2 : mesh.vertices(v)) {
-            Surface_mesh::Edge e = mesh.find_edge(v, v2);
-            laplace += e_weight[e] * (mesh.position(v2) - mesh.position(v));
-        }
-        laplace *= v_weight[v];
-        v_laplacian[v] = laplace;
-        v_curvature[v] = norm(laplace);
-    }
-}
 
 void Meshiew::calc_gauss_curvature() {
     selectable_scalar_properties.emplace_back("Gauss Curvature");
@@ -846,7 +1101,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         new Label(btn->popup(), "Load from File");
         auto textbox = new TextBox(btn->popup(), "/tmp/pointcloud.pcd");
 
-        (new Button(btn->popup(), "Load"))->setCallback([this, textbox, pcr](){
+        (new Button(btn->popup(), "Load"))->setCallback([this, textbox, pcr]() {
             PCDReader reader(textbox->value());
             if (reader.has_color()) {
                 pcr->show_points(reader.get_points(), reader.get_colors());
@@ -910,6 +1165,15 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             vfr->setVisible(false);
         }
     });
+
+//    Temporarily disabled
+//    new Label(control, "Remeshing");
+//    (new Button(control, "Remesh"))->setCallback([this]() {
+//        remesh(AVERAGE, 1);
+//        mesh.update_face_normals();
+//        mesh.update_vertex_normals();
+//        initModel();
+//    });
 
 
     bool closed = true;
@@ -1085,5 +1349,94 @@ void Meshiew::init_timer() {
 
 void Meshiew::create_simulink_receiver(const std::string &host, int port, PointRenderer *pr) {
     receivers.emplace_back(std::make_shared<SimulinkReceiver>(host, port), pr);
+}
+
+void Meshiew::calc_mean_curvature() {
+    selectable_scalar_properties.emplace_back("Mean Curvature");
+    property_map["Mean Curvature"] = "v:curvature";
+    Surface_mesh::Vertex_property<Scalar> v_curvature = mesh.vertex_property<Scalar>("v:curvature", 0);
+    Surface_mesh::Vertex_property<Vec3> v_laplacian = mesh.vertex_property<Vec3>("Laplacian", Vec3(0, 0, 0));
+    Surface_mesh::Edge_property<Scalar> e_weight = mesh.edge_property<Scalar>("e:weight", 0);
+    Surface_mesh::Vertex_property<Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
+    Point laplace(0.0);
+
+    for (const auto &v : mesh.vertices()) {
+        laplace = 0;
+        for (const auto &v2 : mesh.vertices(v)) {
+            Surface_mesh::Edge e = mesh.find_edge(v, v2);
+            laplace += e_weight[e] * (mesh.position(v2) - mesh.position(v));
+        }
+        laplace *= v_weight[v];
+        v_laplacian[v] = laplace;
+        v_curvature[v] = norm(laplace);
+    }
+}
+
+void Meshiew::calc_principal_curvature_directions() {
+    using namespace std::chrono;
+    Surface_mesh::Vertex_property<Vec3> v_principal_direction1 = mesh.vertex_property<Vec3>("v:prince_1",
+                                                                                            Vec3(0, 0, 0));
+    Surface_mesh::Vertex_property<Vec3> v_principal_direction2 = mesh.vertex_property<Vec3>("v:prince_2",
+                                                                                            Vec3(0, 0, 0));
+    auto vertex_normal = mesh.vertex_property<Point>("v:normal");
+    Surface_mesh::Edge_property<Scalar> e_weight = mesh.edge_property<Scalar>("e:weight", 0);
+    Surface_mesh::Vertex_property<Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
+    auto t_start = steady_clock::now();
+
+    for (const auto &vi : mesh.vertices()) {
+        auto xi = mesh.position(vi);
+        auto n = vertex_normal[vi];
+        auto ni = 0;
+        for (const auto &vj : mesh.vertices(vi)) ni++;
+
+        int j = 0;
+        Eigen::MatrixXf m(ni, 3);
+        Eigen::VectorXf k(ni);
+        Eigen::MatrixXf weights = Eigen::MatrixXf::Zero(ni, ni);
+        for (const auto &e : mesh.halfedges(vi)) {
+            auto vj = mesh.to_vertex(e);
+            auto xj = mesh.position(vj);
+            double kij = 2 * dot(xi - xj, n) / pow(norm(xi - xj), 2);
+            Vec3 d = (xj - xi) - dot(xj - xi, n) * n;
+            d /= norm(d);
+            k(j) = kij;
+            weights(j, j) = 2 * v_weight[vi] * (1. / 8) * e_weight[mesh.edge(e)] * pow(norm(xi - xj), 2);
+            if (weights(j, j) == 0) weights(j, j) = 1e-6;
+            m.row(j++) << d.x, d.y, d.z;
+        }
+        Eigen::JacobiSVD<MatrixXf> svd(m, ComputeThinV);
+        auto T = svd.matrixV();
+
+        Eigen::MatrixXf d2 = m * T;
+
+        Eigen::MatrixXf data(ni, 3);
+        for (int i = 0; i < ni; i++) {
+            data(i, 0) = d2(i, 0) * d2(i, 0);
+            data(i, 1) = 2 * d2(i, 0) * d2(i, 1);
+            data(i, 2) = d2(i, 1) * d2(i, 1);
+        }
+
+        Eigen::VectorXf x = (weights * data).householderQr().solve(weights * k);
+
+        Eigen::Matrix2f curvatureTensor;
+        curvatureTensor << x(0), x(1), x(1), x(2);
+
+        Eigen::EigenSolver<MatrixXf> eig(curvatureTensor);
+
+        Eigen::MatrixXf principalDirectionsLocal = Eigen::MatrixXf::Zero(3, 3);
+        principalDirectionsLocal.block<2, 2>(0, 0) << eig.eigenvectors().real().transpose();
+
+        Eigen::MatrixXf principalDirections = principalDirectionsLocal * T.transpose();
+
+        v_principal_direction1[vi] = Vec3(principalDirections(0, 0), principalDirections(0, 1),
+                                          principalDirections(0, 2));
+        v_principal_direction2[vi] = Vec3(principalDirections(1, 0), principalDirections(1, 1),
+                                          principalDirections(1, 2));
+    }
+
+    cout << "Computing the axes of principal curvatures took "
+         << duration_cast<milliseconds>(steady_clock::now() - t_start).count()
+         << "ms." << endl;
+
 }
 
