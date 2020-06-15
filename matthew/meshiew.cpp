@@ -760,7 +760,7 @@ Point Meshiew::computeCenter(Surface_mesh *mesh) {
 void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *info) {
     using namespace nanogui;
 
-    color_coding_window = new ColorCodingWindow(this, {
+    color_coding_window = std::unique_ptr<ColorCodingWindow>(new ColorCodingWindow(this, {
             Eigen::Vector3f(0, 0, 0),
             Eigen::Vector3f(0, 0, 1),
             Eigen::Vector3f(0, 1, 1),
@@ -768,7 +768,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             Eigen::Vector3f(1, 1, 0),
             Eigen::Vector3f(1, 0, 0),
             Eigen::Vector3f(1, 1, 1),
-    });
+    }));
     color_coding_window->setVisible(false);
 
     auto vp = mesh.vertex_properties();

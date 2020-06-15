@@ -30,6 +30,7 @@ ColorCodingWindow::ColorCodingWindow(nanogui::Widget *parent, const std::vector<
         this->setVisible(false);
     });
 
+    initialized = true;
 }
 
 void ColorCodingWindow::update_code(const std::vector<double> &levels) {

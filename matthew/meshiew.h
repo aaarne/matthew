@@ -102,7 +102,7 @@ protected:
     std::vector<std::string> selectable_vector_properties;
     std::map<std::string, std::string> property_map;
 
-    ColorCodingWindow *color_coding_window;
+    std::unique_ptr<ColorCodingWindow> color_coding_window;
 
     Eigen::Vector3f base_color;
     COLOR_MODE color_mode = NORMAL;

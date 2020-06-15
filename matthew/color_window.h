@@ -13,10 +13,11 @@ class ColorCodingWindow : public nanogui::Window {
 public:
     explicit ColorCodingWindow(nanogui::Widget *parent, const std::vector<Eigen::Vector3f> &colors);
 
-    void update_code(const std::vector<double> &levels);
+    virtual void update_code(const std::vector<double> &levels);
 
-private:
+protected:
     std::vector<nanogui::IntBox<double>*> boxes;
+    bool initialized = false;
 
 
 };
