@@ -1275,6 +1275,7 @@ void Meshiew::calc_boundary() {
                  [this](const Vertex &v) {
                      return mesh.is_boundary(v);
                  });
+    long loop_counter = 0;
 
     while (!boundary_vertices.empty()) {
         auto v = boundary_vertices[0];
@@ -1282,6 +1283,7 @@ void Meshiew::calc_boundary() {
         auto v_start = v;
         vector<Vertex> loop = {v};
         do {
+	    loop_counter++;
             for (const auto &h : mesh.halfedges(v)) {
                 bool is_boundary = mesh.is_boundary(h);
                 bool goes_back = mesh.to_vertex(h) == v_last;
@@ -1291,6 +1293,10 @@ void Meshiew::calc_boundary() {
                     v_last = v;
                     break;
                 }
+            }
+	    if (loop_counter > mesh.n_vertices()) {
+		    std::cerr << "Aborted endless loop when finding closed boundary. Your mesh is broken." << std::endl;
+		    break;
             }
         } while (v != v_start);
 
