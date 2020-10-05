@@ -352,15 +352,23 @@ void Meshiew::color_coding(Surface_mesh::Vertex_property<Scalar> prop, Surface_m
     std::vector<Scalar> values = prop.vector();
     std::sort(values.begin(), values.end());
 
-    auto quantiles = Quantile<float>(values, {
-            0.,
-            0.01,
-            0.33,
-            0.5,
-            0.66,
-            0.99,
-            1.
-    });
+    std::vector<float> quantiles = show_minmax ? Quantile<float>(values, {
+		    0.,
+		    0.01,
+		    0.33,
+		    0.5,
+		    0.66,
+		    0.99,
+		    1.
+	    }) : Quantile<float>(values, {
+		    0.,
+		    0.,
+		    0.33,
+		    0.5,
+		    0.66,
+		    1.,
+		    1.
+	    });
 
     if (color_coding_window) {
         std::vector<double> v(quantiles.begin(), quantiles.end());
@@ -876,6 +884,10 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         this->color_coding_window->setVisible(true);
         upload_color(prop_name);
     });
+
+    new Label(c, "Outliers");
+    (new CheckBox(c, "Show max/min"))->setCallback([this](bool value) {this->show_minmax = value;});
+
 
     Window *window = info;
     auto info_line = [&](const std::string &title, int value) {

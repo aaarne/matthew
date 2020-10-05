@@ -117,6 +117,8 @@ protected:
     bool hide_mesh = false;
     Surface_mesh mesh;
 
+    bool show_minmax = false;
+
     int n_boundary_points;
 
     struct line_renderer_settings {
