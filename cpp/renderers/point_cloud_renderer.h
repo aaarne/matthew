@@ -13,6 +13,7 @@
 class PointCloudRenderer : public Renderer {
 public:
     explicit PointCloudRenderer();
+    PointCloudRenderer(const std::string &default_file);
     void init() override;
 
     void show_points(const Eigen::MatrixXf &p);
@@ -21,6 +22,7 @@ public:
     void set_color(const Eigen::Vector3f &c);
     void set_colors(const Eigen::MatrixXf &c);
 
+    const std::string default_file;
 protected:
     void do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) override;
 
@@ -32,6 +34,7 @@ private:
     Eigen::MatrixXf colors;
     Eigen::Vector3f color;
     Eigen::MatrixXf points;
+
 
     nanogui::GLShader shader;
 

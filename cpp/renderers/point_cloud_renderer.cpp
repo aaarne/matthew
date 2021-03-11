@@ -34,7 +34,12 @@ void PointCloudRenderer::show_points(const Eigen::MatrixXf &p) {
     this->updated = true;
 }
 
-PointCloudRenderer::PointCloudRenderer() {
+PointCloudRenderer::PointCloudRenderer() : PointCloudRenderer("/tmp/pointcloud.pcd") {
+
+}
+
+PointCloudRenderer::PointCloudRenderer(const std::string &default_file) :
+  default_file(default_file) {
 
 }
 

@@ -606,6 +606,11 @@ void Meshiew::initShaders() {
             new LineRenderer(model_center, surface_mesh::Color(1.0, 1.0, 1.0)),
             new LineRenderer(model_center, surface_mesh::Color(0.0, 0.0, 0.0)),
             new LineRenderer(model_center, surface_mesh::Color(1.0, 0.0, 0.0)),
+            new LineRenderer(model_center, surface_mesh::Color(0.0, 1.0, 0.0)),
+            new LineRenderer(model_center, surface_mesh::Color(1.0, 1.0, 0.0)),
+            new LineRenderer(model_center, surface_mesh::Color(1.0, 0.0, 1.0)),
+            new LineRenderer(model_center, surface_mesh::Color(0.0, 0.0, 1.0)),
+            new LineRenderer(model_center, surface_mesh::Color(1.0, 0.5, 0.0)),
     };
 
     point_renderers = {
@@ -619,14 +624,14 @@ void Meshiew::initShaders() {
     };
 
     point_cloud_renderers = {
-            new PointCloudRenderer(),
-            new PointCloudRenderer(),
-            new PointCloudRenderer(),
+            new PointCloudRenderer("/tmp/pointcloud.pcd"),
+            new PointCloudRenderer("/tmp/means.pcd"),
+            new PointCloudRenderer("/tmp/test.pcd"),
     };
 
     for (const auto &lr : line_renderers) {
         lr->setVisible(false);
-        line_renderer_settings[lr].n_lines = 10;
+        line_renderer_settings[lr].n_lines = 20;
         line_renderer_settings[lr].prop_name = "v:id";
         auto c = lr->getColor();
         line_renderer_settings[lr].color << c.x, c.y, c.z;
@@ -979,6 +984,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
 
         new Label(inner_popup, "Line Rendering");
         auto checkbox = new CheckBox(inner_popup, "Enable");
+        checkbox->setChecked(false);
         checkbox->setCallback([this, lr](bool value) {
             lr->setVisible(value);
         });
@@ -1007,7 +1013,8 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             combo->setEnabled(false);
             combo->setCaption("No Data");
         }
-        combo->setCallback([this, lr, trajectory_files](int index) {
+        auto strip_mode_chk = new CheckBox(inner_popup, "Strip Mode");
+        combo->setCallback([this, lr, trajectory_files, strip_mode_chk](int index) {
             auto filename = trajectory_files[index];
             line_renderer_settings[lr].point_trace_mode = false;
             line_renderer_settings[lr].show_raw_data = true;
@@ -1015,8 +1022,12 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             for (const auto &p : trajectory_reader::read(filename, true)) {
                 points.emplace_back(p.x, p.y, p.z);
             }
-            lr->show_line(points);
+            if (strip_mode_chk->checked())
+                lr->show_line_segments(points);
+            else
+                lr->show_line(points);
         });
+
 
         new Label(inner_popup, "Point Renderer Traces");
         std::vector<string> renderer_names;
@@ -1111,7 +1122,8 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         });
 
         new Label(btn->popup(), "Load from File");
-        auto textbox = new TextBox(btn->popup(), "/tmp/pointcloud.pcd");
+        auto textbox = new TextBox(btn->popup(), pcr->default_file);
+        textbox->setEditable(true);
 
         (new Button(btn->popup(), "Load"))->setCallback([this, textbox, pcr]() {
             PCDReader reader(textbox->value());
@@ -1457,4 +1469,3 @@ void Meshiew::calc_principal_curvature_directions() {
          << "ms." << endl;
 
 }
-

@@ -2,6 +2,8 @@
 #include "matthew.h"
 #include "CLI11.hpp"
 
+#include <unsupported/Eigen/AutoDiff>
+
 using namespace std;
 
 int main(int argc, char **argv) {
