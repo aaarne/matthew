@@ -24,7 +24,7 @@ Widget::Widget(Widget *parent)
       mPos(Vector2i::Zero()), mSize(Vector2i::Zero()),
       mFixedSize(Vector2i::Zero()), mVisible(true), mEnabled(true),
       mFocused(false), mMouseFocus(false), mTooltip(""), mFontSize(-1.0f),
-      mCursor(Cursor::Arrow) {
+      mIconExtraScale(1.0f), mCursor(Cursor::Arrow) {
     if (parent)
         parent->addChild(this);
 }
@@ -166,7 +166,7 @@ int Widget::childIndex(Widget *widget) const {
     auto it = std::find(mChildren.begin(), mChildren.end(), widget);
     if (it == mChildren.end())
         return -1;
-    return it - mChildren.begin();
+    return (int) (it - mChildren.begin());
 }
 
 Window *Widget::window() {
@@ -178,6 +178,19 @@ Window *Widget::window() {
         Window *window = dynamic_cast<Window *>(widget);
         if (window)
             return window;
+        widget = widget->parent();
+    }
+}
+
+Screen *Widget::screen() {
+    Widget *widget = this;
+    while (true) {
+        if (!widget)
+            throw std::runtime_error(
+                "Widget:internal error (could not find parent screen)");
+        Screen *screen = dynamic_cast<Screen *>(widget);
+        if (screen)
+            return screen;
         widget = widget->parent();
     }
 }
@@ -201,11 +214,17 @@ void Widget::draw(NVGcontext *ctx) {
     if (mChildren.empty())
         return;
 
+    nvgSave(ctx);
     nvgTranslate(ctx, mPos.x(), mPos.y());
-    for (auto child : mChildren)
-        if (child->visible())
+    for (auto child : mChildren) {
+        if (child->visible()) {
+            nvgSave(ctx);
+            nvgIntersectScissor(ctx, child->mPos.x(), child->mPos.y(), child->mSize.x(), child->mSize.y());
             child->draw(ctx);
-    nvgTranslate(ctx, -mPos.x(), -mPos.y());
+            nvgRestore(ctx);
+        }
+    }
+    nvgRestore(ctx);
 }
 
 void Widget::save(Serializer &s) const {

@@ -27,6 +27,8 @@ NAMESPACE_BEGIN(nanogui)
  */
 class NANOGUI_EXPORT Popup : public Window {
 public:
+    enum Side { Left = 0, Right };
+
     /// Create a new popup parented to a screen (first argument) and a parent window
     Popup(Widget *parent, Window *parentWindow);
 
@@ -39,6 +41,11 @@ public:
     void setAnchorHeight(int anchorHeight) { mAnchorHeight = anchorHeight; }
     /// Return the anchor height; this determines the vertical shift relative to the anchor position
     int anchorHeight() const { return mAnchorHeight; }
+
+    /// Set the side of the parent window at which popup will appear
+    void setSide(Side popupSide) { mSide = popupSide; }
+    /// Return the side of the parent window at which popup will appear
+    Side side() const { return mSide; }
 
     /// Return the parent window of the popup
     Window *parentWindow() { return mParentWindow; }
@@ -61,6 +68,9 @@ protected:
     Window *mParentWindow;
     Vector2i mAnchorPos;
     int mAnchorHeight;
+    Side mSide;
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 NAMESPACE_END(nanogui)

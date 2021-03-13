@@ -15,8 +15,8 @@
 
 #pragma once
 
-#include <nanogui/compat.h>
 #include <nanogui/widget.h>
+#include <cstdio>
 #include <sstream>
 
 NAMESPACE_BEGIN(nanogui)
@@ -25,6 +25,11 @@ NAMESPACE_BEGIN(nanogui)
  * \class TextBox textbox.h nanogui/textbox.h
  *
  * \brief Fancy text box with builtin regular expression-based validation.
+ *
+ * \remark
+ *     This class overrides \ref nanogui::Widget::mIconExtraScale to be ``0.8f``,
+ *     which affects all subclasses of this Widget.  Subclasses must explicitly
+ *     set a different value if needed (e.g., in their constructor).
  */
 class NANOGUI_EXPORT TextBox : public Widget {
 public:
@@ -63,11 +68,18 @@ public:
     /// Specify a regular expression specifying valid formats
     void setFormat(const std::string &format) { mFormat = format; }
 
+    /// Return the placeholder text to be displayed while the text box is empty.
+    const std::string &placeholder() const { return mPlaceholder; }
+    /// Specify a placeholder text to be displayed while the text box is empty.
+    void setPlaceholder(const std::string &placeholder) { mPlaceholder = placeholder; }
+
     /// Set the \ref Theme used to draw this widget
     virtual void setTheme(Theme *theme) override;
 
-    /// Set the change callback
+    /// The callback to execute when the value of this TextBox has changed.
     std::function<bool(const std::string& str)> callback() const { return mCallback; }
+
+    /// Sets the callback to execute when the value of this TextBox has changed.
     void setCallback(const std::function<bool(const std::string& str)> &callback) { mCallback = callback; }
 
     virtual bool mouseButtonEvent(const Vector2i &p, int button, bool down, int modifiers) override;
@@ -111,6 +123,7 @@ protected:
     std::function<bool(const std::string& str)> mCallback;
     bool mValidFormat;
     std::string mValueTemp;
+    std::string mPlaceholder;
     int mCursorPos;
     int mSelectionPos;
     Vector2i mMousePos;
@@ -119,6 +132,8 @@ protected:
     int mMouseDownModifier;
     float mTextOffset;
     double mLastClick;
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -230,6 +245,8 @@ private:
     Scalar mMouseDownValue;
     Scalar mValueIncrement;
     Scalar mMinValue, mMaxValue;
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -263,7 +280,7 @@ public:
     void setValue(Scalar value) {
         Scalar clampedValue = std::min(std::max(value, mMinValue),mMaxValue);
         char buffer[50];
-        NANOGUI_SNPRINTF(buffer, 50, mNumberFormat.c_str(), clampedValue);
+        std::snprintf(buffer, 50, mNumberFormat.c_str(), clampedValue);
         TextBox::setValue(buffer);
     }
 
@@ -342,6 +359,8 @@ private:
     Scalar mMouseDownValue;
     Scalar mValueIncrement;
     Scalar mMinValue, mMaxValue;
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 NAMESPACE_END(nanogui)

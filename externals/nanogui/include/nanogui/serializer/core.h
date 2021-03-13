@@ -31,7 +31,7 @@ NAMESPACE_BEGIN(detail)
  *
  * \rst
  * The primary serialization helper class; preliminary specializations
- * are in :ref:`file_include_nanogui_serializer_core.h`, see :ref:`class_nanogui__Serializer`.
+ * are in :ref:`file_nanogui_serializer_core.h`, see :class:`nanogui::Serializer`.
  * \endrst
  */
 template <typename T> struct serialization_helper;
@@ -53,7 +53,7 @@ NAMESPACE_END(detail)
  * ``nanogui/serializer/opengl.h``, and ``nanogui/serializer/sparse.h`` must
  * be included to serialize the respective data types.
  */
-class Serializer {
+class NANOGUI_EXPORT Serializer {
 protected:
 // this friendship breaks the documentation
 #ifndef DOXYGEN_SHOULD_SKIP_THIS

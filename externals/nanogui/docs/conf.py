@@ -20,7 +20,7 @@ import textwrap
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('.'))
+# sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration ------------------------------------------------
 
@@ -32,14 +32,85 @@ needs_sphinx = '1.0'
 # ones.
 extensions = [
     'sphinx.ext.ifconfig',
-    'breathe'
+    'breathe',
+    'exhale'
 ]
 
-breathe_projects = { "NanoGUI": "./doxyoutput/xml" }
+# Setup the `breathe` extension
+breathe_projects = { "NanoGUI": "./_doxygen/xml" }
 breathe_default_project = "NanoGUI"
 
+# Setup the `exhale` extension
+exhale_args = {
+    ############################################################################
+    # These arguments are required.                                            #
+    ############################################################################
+    "containmentFolder":     "./api",
+    "rootFileName":          "library_root.rst",
+    "rootFileTitle":         "Library API",
+    "doxygenStripFromPath":  "../include",
+    ############################################################################
+    # Suggested optional arguments.                                            #
+    ############################################################################
+    "createTreeView":        True,
+    "exhaleExecutesDoxygen": True,
+    "exhaleDoxygenStdin": textwrap.dedent('''
+        # Tell Doxygen where the source code is (yours may be different).
+        INPUT                  = ../include
+        # Doxygen chokes on `NAMESPACE_BEGIN`, predfine all of these
+        PREDEFINED            += NAMESPACE_BEGIN(nanogui)="namespace nanogui {"
+        PREDEFINED            += NAMESPACE_END(nanogui)="}"
+        PREDEFINED            += NAMESPACE_BEGIN(detail)="namespace detail {"
+        PREDEFINED            += NAMESPACE_END(detail)="}"
+        PREDEFINED            += DOXYGEN_SHOULD_SKIP_THIS
+        PREDEFINED            += DOXYGEN_DOCUMENTATION_BUILD
+        PREDEFINED            += NANOGUI_EXPORT
+    '''),
+    ############################################################################
+    # HTML Theme specific configurations.                                      #
+    ############################################################################
+    # Fix broken Sphinx RTD Theme 'Edit on GitHub' links
+    # Search for 'Edit on GitHub' on the FAQ:
+    #     http://exhale.readthedocs.io/en/latest/faq.html
+    "pageLevelConfigMeta": ":github_url: https://github.com/wjakob/nanogui",
+    ############################################################################
+    # Main library page layout example configuration.                          #
+    ############################################################################
+    "afterTitleDescription": textwrap.dedent(u'''
+        Welcome to the developer reference to NanoGUI.  The documentation is
+        actively being developed / updated.  If you would like to help document
+        any part of the project you may be familiar with, please refer to the
+        :ref:`developer_contribution` page.
+
+        .. note::
+
+           Presented below is only the C++ API. If you are using the Python API,
+           the contents below are still applicable for understanding what
+           methods are available.  While the documentation for the C++ API is
+           useful as a reference for understanding what a given class does, the
+           Python API does differ.  Please refer to the more concise
+           :ref:`nanogui_example_2` for comparing the differences between the
+           C++ and Python interfaces.
+    '''),
+    ############################################################################
+    # Individual page layout example configuration.                            #
+    ############################################################################
+    # Example of adding contents directives on custom kinds with custom title
+    "contentsTitle": "Page Contents",
+    "kindsWithContentsDirectives": ["class", "file", "namespace", "struct"],
+    ############################################################################
+    # useful to see ;)
+    # "verboseBuild": True
+}
+
+# Tell sphinx what the primary language being documented is.
+primary_domain = 'cpp'
+
+# Tell sphinx what the pygments highlight language should be.
+highlight_language = 'cpp'
+
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -54,7 +125,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'NanoGUI'
-copyright = u'2016, Wenzel Jakob'
+copyright = u'2019, Wenzel Jakob'
 author = u'Wenzel Jakob'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -81,7 +152,7 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', '_doxygen']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -99,7 +170,7 @@ exclude_patterns = ['_build']
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+# pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -110,25 +181,11 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
-# Tell sphinx what the primary language being documented is.
-primary_domain = 'cpp'
-
-# Tell sphinx what the pygments highlight language should be.
-highlight_language = 'cpp'
-
-
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-# on_rtd is whether we are on readthedocs.org, this line of code grabbed from docs.readthedocs.org
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-
-if not on_rtd:  # only import and set the theme if we're building docs locally
-    import sphinx_rtd_theme
-    html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-# html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -302,99 +359,14 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+import datetime
+rst_epilog = textwrap.dedent('''
+    .. |year| replace:: {year}
+'''.format(
+    year=datetime.datetime.now().year
+))
 
-
-def generateDoxygenXML(stripPath):
-    '''
-    Generates the doxygen xml files used by breathe and exhale.
-    Approach modified from:
-
-    - https://github.com/fmtlib/fmt/blob/master/doc/build.py
-
-    :param stripPath:
-        The value you are sending to exhale.generate via the
-        key 'doxygenStripFromPath'.  Usually, should be '..'.
-    '''
-    from subprocess import PIPE, Popen
-    try:
-        doxygen_cmd = ["doxygen", "-"]# "-" tells Doxygen to read configs from stdin
-        doxygen_proc = Popen(doxygen_cmd, stdin=PIPE)
-        doxygen_proc.communicate(input=r'''
-            # Make this the same as what you tell exhale.
-            OUTPUT_DIRECTORY       = doxyoutput
-            # If you need this to be YES, exhale will probably break.
-            CREATE_SUBDIRS         = NO
-            # So that only include/ and subdirectories appear.
-            FULL_PATH_NAMES        = YES
-            STRIP_FROM_PATH        = "%s/"
-            # Tell Doxygen where the source code is (yours may be different).
-            INPUT                  = ../include
-            # Nested folders will be ignored without this.  You may not need it.
-            RECURSIVE              = YES
-            # Set to YES if you are debugging or want to compare.
-            GENERATE_HTML          = NO
-            # Unless you want it?
-            GENERATE_LATEX         = NO
-            # Both breathe and exhale need the xml.
-            GENERATE_XML           = YES
-            # Set to NO if you do not want the Doxygen program listing included.
-            XML_PROGRAMLISTING     = YES
-            # Allow for rst directives and advanced functions (e.g. grid tables)
-            ALIASES                = "rst=\verbatim embed:rst:leading-asterisk"
-            ALIASES               += "endrst=\endverbatim"
-            # We definitely need the preprocessor for this project.
-            ENABLE_PREPROCESSING   = YES
-            MACRO_EXPANSION        = YES
-            EXPAND_ONLY_PREDEF     = NO
-            SKIP_FUNCTION_MACROS   = NO
-            PREDEFINED             = NAMESPACE_BEGIN(nanogui)="namespace nanogui {"
-            PREDEFINED            += NAMESPACE_END(nanogui)="}"
-            PREDEFINED            += NAMESPACE_BEGIN(detail)="namespace detail {"
-            PREDEFINED            += NAMESPACE_END(detail)="}"
-            PREDEFINED            += DOXYGEN_SHOULD_SKIP_THIS
-            PREDEFINED            += DOXYGEN_DOCUMENTATION_BUILD
-            PREDEFINED            += NANOGUI_EXPORT
-        ''' % stripPath)
-        doxygen_proc.stdin.close()
-        if doxygen_proc.wait() != 0:
-            raise RuntimeError("Non-zero return code from 'doxygen'...")
-    except Exception as e:
-        raise Exception("Unable to execute 'doxygen': {}".format(e))
-
-
-# setup is called auto-magically for you by Sphinx
+# auto-magically called by sphinx-build
 def setup(app):
-    stripPath = ".."
-    generateDoxygenXML(stripPath)
-
-    # generate description text for the library api
-    libraryDescription = textwrap.dedent('''
-    Welcome to the developer reference to NanoGUI.  The documentation is actively being
-    developed / updated.  If you would like to help document any part of the project
-    you may be familiar with, please refer to the :ref:`developer_contribution` page.
-
-    .. note::
-       Presented below is only the C++ API. If you are using the Python API, the
-       contents below are still applicable for understanding what methods are available.
-       While the documentation for the C++ API is useful as a reference for
-       understanding what a given class does, the Python API does differ.  Please refer
-       to the more concise :ref:`nanogui_example_2` for comparing the differences
-       between the C++ and Python interfaces.
-    ''')
-
-
-    # create the dictionary to send to exhale
-    exhaleArgs = {
-        "doxygenIndexXMLPath"        : "./doxyoutput/xml/index.xml",
-        "containmentFolder"          : "./generated_api",
-        "rootFileName"               : "library_root.rst",
-        "rootFileTitle"              : "Library API",
-        "fullToctreeMaxDepth"        : 1,
-        "createTreeView"             : True,
-        "afterTitleDescription"      : libraryDescription,
-        "doxygenStripFromPath"       : ".."
-    }
-
-    # import the exhale module from the current directory and generate the api
-    from exhale import generate
-    generate(exhaleArgs)
+    # this looks in html_static_path (_static directory as set above)
+    app.add_stylesheet("entypo.css")

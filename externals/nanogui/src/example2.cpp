@@ -33,7 +33,7 @@ Color colval(0.5f, 0.5f, 0.7f, 1.f);
 int main(int /* argc */, char ** /* argv */) {
     nanogui::init();
 
-    {
+    /* scoped variables */ {
         bool use_gl_4_1 = false;// Set to true to create an OpenGL 4.1 context.
         Screen *screen = nullptr;
 
@@ -44,8 +44,7 @@ int main(int /* argc */, char ** /* argv */) {
                                 /*resizable*/true, /*fullscreen*/false, /*colorBits*/8,
                                 /*alphaBits*/8, /*depthBits*/24, /*stencilBits*/8,
                                 /*nSamples*/0, /*glMajor*/4, /*glMinor*/1);
-        }
-        else {
+        } else {
             screen = new Screen(Vector2i(500, 700), "NanoGUI test");
         }
 
@@ -64,7 +63,14 @@ int main(int /* argc */, char ** /* argv */) {
         gui->addGroup("Complex types");
         gui->addVariable("Enumeration", enumval, enabled)
            ->setItems({"Item 1", "Item 2", "Item 3"});
-        gui->addVariable("Color", colval);
+        gui->addVariable("Color", colval)
+           ->setFinalCallback([](const Color &c) {
+                 std::cout << "ColorPicker Final Callback: ["
+                           << c.r() << ", "
+                           << c.g() << ", "
+                           << c.b() << ", "
+                           << c.w() << "]" << std::endl;
+             });
 
         gui->addGroup("Other widgets");
         gui->addButton("A button", []() { std::cout << "Button pressed." << std::endl; });

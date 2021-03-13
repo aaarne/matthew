@@ -28,7 +28,7 @@ Vector2i ImagePanel::gridSize() const {
 }
 
 int ImagePanel::indexForPosition(const Vector2i &p) const {
-    Vector2f pp = (p.cast<float>() - Vector2f::Constant(mMargin)) /
+    Vector2f pp = ((p - mPos).cast<float>() - Vector2f::Constant(mMargin)) /
                   (float)(mThumbSize + mSpacing);
     float iconRegion = mThumbSize / (float)(mThumbSize + mSpacing);
     bool overImage = pp.x() - std::floor(pp.x()) < iconRegion &&
@@ -40,7 +40,7 @@ int ImagePanel::indexForPosition(const Vector2i &p) const {
 }
 
 bool ImagePanel::mouseMotionEvent(const Vector2i &p, const Vector2i & /* rel */,
-                              int /* button */, int /* modifiers */) {
+                                  int /* button */, int /* modifiers */) {
     mMouseIndex = indexForPosition(p);
     return true;
 }
@@ -48,7 +48,7 @@ bool ImagePanel::mouseMotionEvent(const Vector2i &p, const Vector2i & /* rel */,
 bool ImagePanel::mouseButtonEvent(const Vector2i &p, int /* button */, bool down,
                                   int /* modifiers */) {
     int index = indexForPosition(p);
-    if (index >= 0 && mCallback && down)
+    if (index >= 0 && index < (int) mImages.size() && mCallback && down)
         mCallback(index);
     return true;
 }

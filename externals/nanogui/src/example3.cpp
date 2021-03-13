@@ -79,15 +79,24 @@ int main(int /* argc */, char ** /* argv */) {
     }
     glfwMakeContextCurrent(window);
 
+#if defined(NANOGUI_GLAD)
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
+        throw std::runtime_error("Could not initialize GLAD!");
+    glGetError(); // pull and ignore unhandled errors like GL_INVALID_ENUM
+#endif
+
+    glClearColor(0.2f, 0.25f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Create a nanogui screen and pass the glfw pointer to initialize
+    screen = new Screen();
+    screen->initialize(window, true);
+
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
     glfwSwapInterval(0);
     glfwSwapBuffers(window);
-
-    // Create a nanogui screen and pass the glfw pointer to initialize
-    screen = new Screen();
-    screen->initialize(window, true);
 
     // Create nanogui gui
     bool enabled = true;
@@ -104,7 +113,14 @@ int main(int /* argc */, char ** /* argv */) {
 
     gui->addGroup("Complex types");
     gui->addVariable("Enumeration", enumval, enabled)->setItems({ "Item 1", "Item 2", "Item 3" });
-    gui->addVariable("Color", colval);
+    gui->addVariable("Color", colval)
+       ->setFinalCallback([](const Color &c) {
+             std::cout << "ColorPicker Final Callback: ["
+                       << c.r() << ", "
+                       << c.g() << ", "
+                       << c.b() << ", "
+                       << c.w() << "]" << std::endl;
+         });
 
     gui->addGroup("Other widgets");
     gui->addButton("A button", []() { std::cout << "Button pressed." << std::endl; })->setTooltip("Testing a much longer tooltip, that will wrap around to new lines multiple times.");;
@@ -112,7 +128,6 @@ int main(int /* argc */, char ** /* argv */) {
     screen->setVisible(true);
     screen->performLayout();
     nanoguiWindow->center();
-
 
     glfwSetCursorPosCallback(window,
             [](GLFWwindow *, double x, double y) {

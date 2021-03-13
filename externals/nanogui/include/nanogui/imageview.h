@@ -141,10 +141,10 @@ private:
     void drawImageBorder(NVGcontext* ctx) const;
     void drawHelpers(NVGcontext* ctx) const;
     static void drawPixelGrid(NVGcontext* ctx, const Vector2f& upperLeftCorner,
-                              const Vector2f& lowerRightCorner, const float stride);
-    void drawPixelInfo(NVGcontext* ctx, const float stride) const;
+                              const Vector2f& lowerRightCorner, float stride);
+    void drawPixelInfo(NVGcontext* ctx, float stride) const;
     void writePixelInfo(NVGcontext* ctx, const Vector2f& cellPosition,
-                        const Vector2i& pixel, const float stride) const;
+                        const Vector2i& pixel, float stride, float fontSize) const;
 
     // Image parameters.
     GLShader mShader;
@@ -167,6 +167,8 @@ private:
     // Image pixel data display members.
     std::function<std::pair<std::string, Color>(const Vector2i&)> mPixelInfoCallback;
     float mFontScaleFactor = 0.2f;
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 NAMESPACE_END(nanogui)

@@ -12,7 +12,7 @@
 #include <nanogui/screen.h>
 
 #if defined(_WIN32)
-#include <windows.h>
+#  include <windows.h>
 #endif
 
 #include <nanogui/opengl.h>
@@ -22,19 +22,27 @@
 #include <iostream>
 
 #if !defined(_WIN32)
-    #include <locale.h>
-    #include <signal.h>
-    #include <sys/dir.h>
+#  include <locale.h>
+#  include <signal.h>
+#  include <dirent.h>
 #endif
 
 NAMESPACE_BEGIN(nanogui)
 
 extern std::map<GLFWwindow *, Screen *> __nanogui_screens;
 
+#if defined(__APPLE__)
+  extern void disable_saved_application_state_osx();
+#endif
+
 void init() {
     #if !defined(_WIN32)
         /* Avoid locale-related number parsing issues */
         setlocale(LC_NUMERIC, "C");
+    #endif
+
+    #if defined(__APPLE__)
+        disable_saved_application_state_osx();
     #endif
 
     glfwSetErrorCallback(
@@ -105,7 +113,7 @@ void mainloop(int refresh) {
         glfwPollEvents();
     } catch (const std::exception &e) {
         std::cerr << "Caught exception in main loop: " << e.what() << std::endl;
-        abort();
+        leave();
     }
 
     if (refresh > 0)
@@ -114,6 +122,10 @@ void mainloop(int refresh) {
 
 void leave() {
     mainloop_active = false;
+}
+
+bool active() {
+    return mainloop_active;
 }
 
 void shutdown() {
@@ -190,16 +202,25 @@ loadImageDirectory(NVGcontext *ctx, const std::string &path) {
     return result;
 }
 
-#if !defined(__APPLE__)
 std::string file_dialog(const std::vector<std::pair<std::string, std::string>> &filetypes, bool save) {
-#define FILE_DIALOG_MAX_BUFFER 1024
+    auto result = file_dialog(filetypes, save, false);
+    return result.empty() ? "" : result.front();
+}
+
+#if !defined(__APPLE__)
+std::vector<std::string> file_dialog(const std::vector<std::pair<std::string, std::string>> &filetypes, bool save, bool multiple) {
+    static const int FILE_DIALOG_MAX_BUFFER = 16384;
+    if (save && multiple) {
+        throw std::invalid_argument("save and multiple must not both be true.");
+    }
+
 #if defined(_WIN32)
-    OPENFILENAME ofn;
-    ZeroMemory(&ofn, sizeof(OPENFILENAME));
-    ofn.lStructSize = sizeof(OPENFILENAME);
-    char tmp[FILE_DIALOG_MAX_BUFFER];
+    OPENFILENAMEW ofn;
+    ZeroMemory(&ofn, sizeof(OPENFILENAMEW));
+    ofn.lStructSize = sizeof(OPENFILENAMEW);
+    wchar_t tmp[FILE_DIALOG_MAX_BUFFER];
     ofn.lpstrFile = tmp;
-    ZeroMemory(tmp, FILE_DIALOG_MAX_BUFFER);
+    ZeroMemory(tmp, sizeof(tmp));
     ofn.nMaxFile = FILE_DIALOG_MAX_BUFFER;
     ofn.nFilterIndex = 1;
 
@@ -223,7 +244,7 @@ std::string file_dialog(const std::vector<std::pair<std::string, std::string>> &
         }
         filter.push_back('\0');
     }
-    for (auto pair: filetypes) {
+    for (auto pair : filetypes) {
         filter.append(pair.second);
         filter.append(" (*.");
         filter.append(pair.first);
@@ -234,26 +255,63 @@ std::string file_dialog(const std::vector<std::pair<std::string, std::string>> &
         filter.push_back('\0');
     }
     filter.push_back('\0');
-    ofn.lpstrFilter = filter.data();
+
+    int size = MultiByteToWideChar(CP_UTF8, 0, &filter[0], (int)filter.size(), NULL, 0);
+    std::wstring wfilter(size, 0);
+    MultiByteToWideChar(CP_UTF8, 0, &filter[0], (int)filter.size(), &wfilter[0], size);
+
+    ofn.lpstrFilter = wfilter.data();
 
     if (save) {
         ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
-        if (GetSaveFileNameA(&ofn) == FALSE)
-            return "";
+        if (GetSaveFileNameW(&ofn) == FALSE)
+            return {};
     } else {
         ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-        if (GetOpenFileNameA(&ofn) == FALSE)
-            return "";
+        if (multiple)
+            ofn.Flags |= OFN_ALLOWMULTISELECT;
+        if (GetOpenFileNameW(&ofn) == FALSE)
+            return {};
     }
-    return std::string(ofn.lpstrFile);
+
+    size_t i = 0;
+    std::vector<std::string> result;
+    while (tmp[i] != '\0') {
+        std::string filename;
+        int tmpSize = (int)wcslen(&tmp[i]);
+        if (tmpSize > 0) {
+            int filenameSize = WideCharToMultiByte(CP_UTF8, 0, &tmp[i], tmpSize, NULL, 0, NULL, NULL);
+            filename.resize(filenameSize, 0);
+            WideCharToMultiByte(CP_UTF8, 0, &tmp[i], tmpSize, &filename[0], filenameSize, NULL, NULL);
+        }
+
+        result.emplace_back(filename);
+        i += tmpSize + 1;
+    }
+
+    if (result.size() > 1) {
+        for (i = 1; i < result.size(); ++i) {
+            result[i] = result[0] + "\\" + result[i];
+        }
+        result.erase(begin(result));
+    }
+
+    return result;
 #else
     char buffer[FILE_DIALOG_MAX_BUFFER];
-    std::string cmd = "/usr/bin/zenity --file-selection ";
+    buffer[0] = '\0';
+
+    std::string cmd = "zenity --file-selection ";
+    // The safest separator for multiple selected paths is /, since / can never occur
+    // in file names. Only where two paths are concatenated will there be two / following
+    // each other.
+    if (multiple)
+        cmd += "--multiple --separator=\"/\" ";
     if (save)
         cmd += "--save ";
     cmd += "--file-filter=\"";
-    for (auto pair: filetypes)
-        cmd += "\"*." + pair.first +  "\" ";
+    for (auto pair : filetypes)
+        cmd += "\"*." + pair.first + "\" ";
     cmd += "\"";
     FILE *output = popen(cmd.c_str(), "r");
     if (output == nullptr)
@@ -261,8 +319,21 @@ std::string file_dialog(const std::vector<std::pair<std::string, std::string>> &
     while (fgets(buffer, FILE_DIALOG_MAX_BUFFER, output) != NULL)
         ;
     pclose(output);
-    std::string result(buffer);
-    result.erase(std::remove(result.begin(), result.end(), '\n'), result.end());
+    std::string paths(buffer);
+    paths.erase(std::remove(paths.begin(), paths.end(), '\n'), paths.end());
+
+    std::vector<std::string> result;
+    while (!paths.empty()) {
+        size_t end = paths.find("//");
+        if (end == std::string::npos) {
+            result.emplace_back(paths);
+            paths = "";
+        } else {
+            result.emplace_back(paths.substr(0, end));
+            paths = paths.substr(end + 1);
+        }
+    }
+
     return result;
 #endif
 }

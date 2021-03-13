@@ -33,7 +33,7 @@ protected:
 
     virtual void initModel() = 0;
 
-    void drawContents() final;
+    void drawContents() override;
 
     virtual void draw(Eigen::Matrix4f mv, Eigen::Matrix4f p) {}
 
@@ -57,6 +57,7 @@ protected:
     std::string filename;
     std::string additional_data_folder = "";
     Eigen::Vector3f model_center;
+    long done;
 
     void add_renderer(const std::shared_ptr<Renderer> &r) {this->renderers.push_back(r);}
     void add_renderer(Renderer *r) {this->renderers.emplace_back(r);}
@@ -87,8 +88,6 @@ private:
                                Eigen::Matrix4f &proj);
 
     bool keyboardEvent(int key, int scancode, int action, int modifiers) override;
-
-    void draw(NVGcontext *ctx) override;
 
     Eigen::Vector2f getScreenCoord();
 

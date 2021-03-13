@@ -15,6 +15,7 @@
 
 using namespace std;
 using namespace Eigen;
+using namespace std::chrono;
 
 Matthew::Matthew(bool fs) :
         nanogui::Screen(Eigen::Vector2i(1680, 1050), "Matthew", true, fs), demo_mode(fs) {
@@ -100,10 +101,6 @@ bool Matthew::keyboardEvent(int key, int scancode, int action, int modifiers) {
     return false;
 }
 
-void Matthew::draw(NVGcontext *ctx) {
-    Screen::draw(ctx);
-}
-
 Vector2f Matthew::getScreenCoord() {
     Vector2i pos = mousePos();
     return Vector2f(2.0f * (float) pos.x() / width() - 1.0f,
@@ -164,10 +161,14 @@ void Matthew::computeCameraMatrices(Eigen::Matrix4f &model, Eigen::Matrix4f &vie
     float fW = fH * (float) mSize.x() / (float) mSize.y();
 
     proj = nanogui::frustum(-fW, fW, -fH, fH, cam.dnear, cam.dfar);
-    model = cam.arcball.matrix();
+    model = cam.arcball.matrix()
+          * nanogui::scale(Eigen::Vector3f::Constant(cam.zoom * cam.modelZoom))
+          * nanogui::translate(cam.modelTranslation);
 
-    model = nanogui::scale(model, Eigen::Vector3f::Constant(cam.zoom * cam.modelZoom));
-    model = nanogui::translate(model, cam.modelTranslation);
+    //model = nanogui::scale(model, Eigen::Vector3f::Constant(cam.zoom * cam.modelZoom));
+    //model = nanogui::scale(Eigen::Vector3f::Constant(cam.zoom * cam.modelZoom));
+    //model = nanogui::translate(model, cam.modelTranslation);
+    //model = nanogui::translate(cam.modelTranslation);
 }
 
 
@@ -247,6 +248,7 @@ void Matthew::initGUI() {
 }
 
 void Matthew::drawContents() {
+    cout << done++ << endl;
     Eigen::Matrix4f model, view, projection;
     computeCameraMatrices(model, view, projection);
     Eigen::Matrix4f mv = view * model;
