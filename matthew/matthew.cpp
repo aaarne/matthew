@@ -164,11 +164,6 @@ void Matthew::computeCameraMatrices(Eigen::Matrix4f &model, Eigen::Matrix4f &vie
     model = cam.arcball.matrix()
           * nanogui::scale(Eigen::Vector3f::Constant(cam.zoom * cam.modelZoom))
           * nanogui::translate(cam.modelTranslation);
-
-    //model = nanogui::scale(model, Eigen::Vector3f::Constant(cam.zoom * cam.modelZoom));
-    //model = nanogui::scale(Eigen::Vector3f::Constant(cam.zoom * cam.modelZoom));
-    //model = nanogui::translate(model, cam.modelTranslation);
-    //model = nanogui::translate(cam.modelTranslation);
 }
 
 
@@ -248,7 +243,6 @@ void Matthew::initGUI() {
 }
 
 void Matthew::drawContents() {
-    cout << done++ << endl;
     Eigen::Matrix4f model, view, projection;
     computeCameraMatrices(model, view, projection);
     Eigen::Matrix4f mv = view * model;
@@ -301,7 +295,7 @@ void matthew::run_app(Matthew *matt) {
     app->run();
     app->drawAll();
     app->setVisible(true);
-    nanogui::mainloop();
+    nanogui::mainloop(0);
     nanogui::shutdown();
 }
 

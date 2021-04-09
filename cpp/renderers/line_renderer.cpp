@@ -17,6 +17,11 @@ void LineRenderer::init() {
     lineShader.setUniform("line_color", line_color);
 }
 
+void LineRenderer::setStripMode(const bool &strip_mode) {
+    this->updated = this->strip_mode ^ strip_mode;
+    this->strip_mode = strip_mode;
+}
+
 void LineRenderer::show_line_segments(const Eigen::MatrixXf &l) {
     this->line = l;
     this->strip_mode = false;

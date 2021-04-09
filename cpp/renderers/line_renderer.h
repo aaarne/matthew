@@ -36,6 +36,8 @@ public:
     void setColor(const surface_mesh::Color &c);
     void setColor(const Eigen::Vector3f &c);
 
+    void setStripMode(const bool &strip_mode);
+
     surface_mesh::Color getColor() const { return color; }
 
 protected:

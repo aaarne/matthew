@@ -604,8 +604,9 @@ void Meshiew::initShaders() {
     using namespace shaders;
     line_renderers = {
             new LineRenderer(model_center, surface_mesh::Color(1.0, 1.0, 1.0)),
-            new LineRenderer(model_center, surface_mesh::Color(0.0, 0.0, 0.0)),
-            new LineRenderer(model_center, surface_mesh::Color(1.0, 0.0, 0.0)),
+            new LineRenderer(model_center, surface_mesh::Color(0.        , 0.39607843, 0.74117647)), // TUM blue
+            new LineRenderer(model_center, surface_mesh::Color(0.89019608, 0.44705882, 0.13333333)), // TUM orange
+            new LineRenderer(model_center, surface_mesh::Color(0.50196078, 0.50196078, 0.50196078)), // TUM gray
             new LineRenderer(model_center, surface_mesh::Color(0.0, 1.0, 0.0)),
             new LineRenderer(model_center, surface_mesh::Color(1.0, 1.0, 0.0)),
             new LineRenderer(model_center, surface_mesh::Color(1.0, 0.0, 1.0)),
@@ -1028,6 +1029,9 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
                 lr->show_line(points);
         });
 
+        strip_mode_chk->setCallback([this, lr](bool checked) {
+            lr->setStripMode(checked);
+        });
 
         new Label(inner_popup, "Point Renderer Traces");
         std::vector<string> renderer_names;

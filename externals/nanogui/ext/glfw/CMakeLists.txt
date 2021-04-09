@@ -42,7 +42,7 @@ if (APPLE)
 endif()
 
 if (UNIX AND NOT APPLE)
-    option(GLFW_USE_WAYLAND "Use Wayland for window creation" OFF)
+    option(GLFW_USE_WAYLAND "Use Wayland for window creation" ON/)
     option(GLFW_USE_MIR     "Use Mir for window creation" OFF)
 endif()
 
@@ -64,7 +64,7 @@ endif()
 set(CMAKE_MODULE_PATH "${GLFW_SOURCE_DIR}/CMake/modules")
 
 find_package(Threads REQUIRED)
-find_package(Vulkan QUIET)
+find_package(Vulkan REQUIRED)
 
 if (GLFW_BUILD_DOCS)
     set(DOXYGEN_SKIP_DOT TRUE)
@@ -268,7 +268,7 @@ if (_GLFW_WAYLAND)
     list(APPEND glfw_INCLUDE_DIRS "${Wayland_INCLUDE_DIR}")
     list(APPEND glfw_LIBRARIES "${Wayland_LIBRARIES}" "${CMAKE_THREAD_LIBS_INIT}")
 
-    find_package(XKBCommon REQUIRED)
+    #find_package(XKBCommon REQUIRED)
     list(APPEND glfw_PKG_DEPS "xkbcommon")
     list(APPEND glfw_INCLUDE_DIRS "${XKBCOMMON_INCLUDE_DIRS}")
     list(APPEND glfw_LIBRARIES "${XKBCOMMON_LIBRARY}")
@@ -400,4 +400,3 @@ if (GLFW_INSTALL)
                           "${GLFW_BINARY_DIR}/cmake_uninstall.cmake")
     endif()
 endif()
-

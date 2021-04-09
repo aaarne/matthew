@@ -57,7 +57,6 @@ protected:
     std::string filename;
     std::string additional_data_folder = "";
     Eigen::Vector3f model_center;
-    long done;
 
     void add_renderer(const std::shared_ptr<Renderer> &r) {this->renderers.push_back(r);}
     void add_renderer(Renderer *r) {this->renderers.emplace_back(r);}
