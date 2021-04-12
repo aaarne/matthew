@@ -7,6 +7,11 @@
 
 using namespace std;
 
+
+PointCloudRenderer::PointCloudRenderer() {
+  
+}
+
 void PointCloudRenderer::init() {
     shader.init("pcd", shaders::point_cloud_verts, shaders::point_cloud_frag);
 }
@@ -32,15 +37,6 @@ void PointCloudRenderer::show_points(const Eigen::MatrixXf &p) {
     this->points = p;
     this->n = p.cols();
     this->updated = true;
-}
-
-PointCloudRenderer::PointCloudRenderer() : PointCloudRenderer("/tmp/pointcloud.pcd") {
-
-}
-
-PointCloudRenderer::PointCloudRenderer(const std::string &default_file) :
-  default_file(default_file) {
-
 }
 
 void PointCloudRenderer::set_color(const Eigen::Vector3f &c) {

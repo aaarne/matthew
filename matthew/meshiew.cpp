@@ -79,7 +79,7 @@ void Meshiew::calc_target_length(const REMESHING_TYPE &remeshing_type) {
     Surface_mesh::Vertex_property<Scalar> max_curvature = mesh.vertex_property<Scalar>("v:max_curvature", 0);
 
 
-    std::vector<double> lengths();
+    std::vector<double> lengths;
     for (const auto &e : mesh.edges()) {
         lengths.push_back(mesh.edge_length(e));
     }
@@ -629,9 +629,9 @@ void Meshiew::initShaders() {
     };
 
     point_cloud_renderers = {
-            new PointCloudRenderer("/tmp/pointcloud.pcd"),
-            new PointCloudRenderer("/tmp/means.pcd"),
-            new PointCloudRenderer("/tmp/test.pcd"),
+            new PointCloudRenderer(),
+            new PointCloudRenderer(),
+            new PointCloudRenderer(),
     };
 
     for (const auto &lr : line_renderers) {

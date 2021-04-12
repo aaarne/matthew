@@ -13,7 +13,6 @@
 class PointCloudRenderer : public Renderer {
 public:
     explicit PointCloudRenderer();
-    PointCloudRenderer(const std::string &default_file);
     void init() override;
 
     void show_points(const Eigen::MatrixXf &p);

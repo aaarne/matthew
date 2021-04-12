@@ -34,7 +34,6 @@ protected:
 private:
     bool has_color;
     Eigen::MatrixXf colors;
-    Eigen::Vector3f color;
     Eigen::MatrixXf points;
     std::shared_ptr<PointCloudRenderer> renderer;
 };

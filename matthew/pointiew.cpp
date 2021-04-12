@@ -18,7 +18,7 @@
 
 using namespace std;
 
-Pointiew::Pointiew(bool fs) : Matthew::Matthew(fs), color(1.0, 1.0, 1.0) {
+Pointiew::Pointiew(bool fs) : Matthew::Matthew(fs) {
     setBackground(nanogui::Color(0.f, 0.f, 0.f, 0.f));
     renderer = std::make_shared<PointCloudRenderer>();
 }
@@ -28,6 +28,7 @@ void Pointiew::initModel() {
         renderer->show_points(points, colors);
     } else {
         renderer->show_points(points);
+        Eigen::Vector3f color(1, 1, 1);
         renderer->set_color(color);
     }
     renderer->setVisible(true);
@@ -44,13 +45,29 @@ void Pointiew::create_gui_elements(nanogui::Window *control, nanogui::Window *in
     using namespace nanogui;
 
     new Label(control, "Base Color:", "sans-bold");
-    auto cp = new ColorPicker(control, color);
-    cp->setFixedSize({100, 20});
-    cp->setCallback([this](const Color &c) {
-        color << c.r(), c.g(), c.b();
-        renderer->set_color(color);
+    auto allow_override = new CheckBox(control, "Allow Override");
+    allow_override->setEnabled(has_color);
+    auto cp = new ColorPicker(control);
+    allow_override->setCallback([this, cp] (bool allowed) {
+        cp->setEnabled(allowed);
+        if (allowed) {
+            Eigen::Vector3f c;
+            auto cc = cp->color();
+            c << cc.r(), cc.g(), cc.b();
+            renderer->set_color(c);
+        } else {
+            renderer->set_colors(colors);
+        }
     });
+    cp->setFixedSize({100, 20});
     cp->setEnabled(!has_color);
+    cp->setCallback([this, allow_override](const Color &c) {
+        if (!this->has_color || allow_override->checked()) {
+            Eigen::Vector3f color;
+            color << c.r(), c.g(), c.b();
+            renderer->set_color(color);
+        }
+    });
 
 
     new Label(control, "Point Size");
@@ -104,6 +121,3 @@ void Pointiew::load_from_file(const std::string &filename) {
         this->colors = reader.get_colors();
     }
 }
-
-
-
