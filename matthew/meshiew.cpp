@@ -49,21 +49,24 @@ void Meshiew::remesh(const REMESHING_TYPE &remeshing_type,
 
     for (int i = 0; i < num_iterations; ++i) {
         cout << "----------- iteration " << i + 1 << " out of " << num_iterations << " -----------" << endl;
-	calc_target_length(remeshing_type);
-	calc_weights();
-	calc_mean_curvature();
-	calc_uniform_laplacian();
-	calc_gauss_curvature();
-        split_long_edges();
-        collapse_short_edges();
-        equalize_valences();
-        tangential_relaxation();
-    }
+        cout << "Amount of vertices before remeshing: " << this->mesh.n_vertices() << "." << endl;
 
-    calc_weights();
-    calc_mean_curvature();
-    calc_uniform_laplacian();
-    calc_gauss_curvature();
+      	calc_target_length(remeshing_type);
+      	calc_weights();
+      	calc_mean_curvature();
+      	calc_uniform_laplacian();
+      	calc_gauss_curvature();
+              split_long_edges();
+              collapse_short_edges();
+              equalize_valences();
+              tangential_relaxation();
+          }
+
+        calc_weights();
+        calc_mean_curvature();
+        calc_uniform_laplacian();
+        calc_gauss_curvature();
+        cout << "Amount of vertices after remeshing: " << this->mesh.n_vertices() << "." << endl;
 }
 
 void Meshiew::calc_target_length(const REMESHING_TYPE &remeshing_type) {
@@ -76,12 +79,13 @@ void Meshiew::calc_target_length(const REMESHING_TYPE &remeshing_type) {
     Surface_mesh::Vertex_property<Scalar> max_curvature = mesh.vertex_property<Scalar>("v:max_curvature", 0);
 
 
-    std::vector<double> lengths(mesh.n_edges());
+    std::vector<double> lengths();
     for (const auto &e : mesh.edges()) {
         lengths.push_back(mesh.edge_length(e));
     }
 
     const float TARGET_LENGTH = std::accumulate(lengths.begin(), lengths.end(), 0.0) / lengths.size();
+    cout << "Target length is: " << TARGET_LENGTH << endl;
 
     if (remeshing_type == AVERAGE) {
         for (v_it = mesh.vertices_begin(); v_it != v_end; ++v_it)
@@ -1015,6 +1019,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
             combo->setCaption("No Data");
         }
         auto strip_mode_chk = new CheckBox(inner_popup, "Strip Mode");
+        strip_mode_chk->setChecked(false);
         combo->setCallback([this, lr, trajectory_files, strip_mode_chk](int index) {
             auto filename = trajectory_files[index];
             line_renderer_settings[lr].point_trace_mode = false;
@@ -1024,9 +1029,9 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
                 points.emplace_back(p.x, p.y, p.z);
             }
             if (strip_mode_chk->checked())
-                lr->show_line_segments(points);
-            else
                 lr->show_line(points);
+            else
+                lr->show_line_segments(points);
         });
 
         strip_mode_chk->setCallback([this, lr](bool checked) {
@@ -1194,15 +1199,42 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         }
     });
 
-//    Temporarily disabled
-//    new Label(control, "Remeshing");
-//    (new Button(control, "Remesh"))->setCallback([this]() {
-//        remesh(AVERAGE, 1);
-//        mesh.update_face_normals();
-//        mesh.update_vertex_normals();
-//        initModel();
-//    });
+    new Label(control, "Remeshing");
+    auto remesh_popup_btn = new PopupButton(control, "Remeshing");
+    pp = remesh_popup_btn->popup();
+    pp->setLayout(new GroupLayout());
 
+    new Label(pp, "Settings");
+    std::vector<std::string> remesh_modes = {"Average", "Curv"};
+    auto remesh_mode_cmb = new ComboBox(pp, remesh_modes);
+
+    auto n_iter_box = new IntBox<int>(pp, 1);
+    n_iter_box->setMinValue(1);
+    n_iter_box->setMaxValue(9999);
+    n_iter_box->setEditable(true);
+    n_iter_box->setSpinnable(true);
+
+    auto allow_remeshing_chkbx = new CheckBox(pp, "Allow Remeshing");
+    new Label(pp, "Warning: Remeshing will invalidate vertex properties.");
+
+    new Label(pp, "Do it!");
+    auto remesh_btn = new Button(pp, "Remesh");
+    remesh_btn->setEnabled(false);
+    remesh_btn->setCallback([this, remesh_mode_cmb, n_iter_box]() {
+        REMESHING_TYPE mode = AVERAGE;
+        switch (remesh_mode_cmb->selectedIndex()) {
+          case 0: mode = AVERAGE; break;
+          case 1: mode = CURV; break;
+        }
+        remesh(mode, n_iter_box->value());
+        mesh.update_face_normals();
+        mesh.update_vertex_normals();
+        initModel();
+    });
+
+    allow_remeshing_chkbx->setCallback([remesh_btn](bool checked) {
+      remesh_btn->setEnabled(checked);
+    });
 
     bool closed = true;
     for (const auto &v : mesh.vertices()) {
