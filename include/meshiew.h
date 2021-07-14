@@ -9,6 +9,7 @@
 #include <timercpp.h>
 #include <simulink_receiver.h>
 #include <vectorfield_renderer.h>
+#include <frame_renderer.h>
 #include "matthew.h"
 #include "line_renderer.h"
 #include "point_cloud_renderer.h"
@@ -132,6 +133,7 @@ protected:
 
     std::shared_ptr<LineRenderer> boundary_renderer;
     std::shared_ptr<VectorfieldRenderer> normals_renderer;
+    std::shared_ptr<FrameRenderer> origin_renderer;
 
     std::vector<LineRenderer*> line_renderers;
     std::map<LineRenderer*, line_renderer_settings> line_renderer_settings;
@@ -139,6 +141,8 @@ protected:
     std::vector<PointRenderer*> point_renderers;
     std::vector<VectorfieldRenderer*> vectorfield_renderers;
     std::vector<PointCloudRenderer*> point_cloud_renderers;
+
+    std::vector<FrameRenderer*> frame_renderers;
 
     Timer t;
     std::vector<std::pair<std::shared_ptr<SimulinkReceiver>, PointRenderer*>> receivers;

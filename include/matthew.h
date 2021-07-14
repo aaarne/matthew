@@ -22,6 +22,9 @@ public:
     static Matthew *create(Eigen::VectorXf &points, bool fullscreen= false);
 
     void setAdditionalDatafolder(const std::string &s) {additional_data_folder = s;}
+    void setLazyMode(const bool &lazy) {lazy_mode = lazy;}
+
+    bool lazy() const {return lazy_mode;}
 
 protected:
 
@@ -54,6 +57,7 @@ protected:
 
 protected:
 
+    bool lazy_mode = false;
     std::string filename;
     std::string additional_data_folder = "";
     Eigen::Vector3f model_center;

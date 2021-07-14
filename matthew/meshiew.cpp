@@ -608,6 +608,7 @@ void Meshiew::initShaders() {
     using namespace shaders;
     line_renderers = {
             new LineRenderer(model_center, surface_mesh::Color(1.0, 1.0, 1.0)),
+            new LineRenderer(model_center, surface_mesh::Color(0.0, 0.0, 0.0)),
             new LineRenderer(model_center, surface_mesh::Color(0.        , 0.39607843, 0.74117647)), // TUM blue
             new LineRenderer(model_center, surface_mesh::Color(0.89019608, 0.44705882, 0.13333333)), // TUM orange
             new LineRenderer(model_center, surface_mesh::Color(0.50196078, 0.50196078, 0.50196078)), // TUM gray
@@ -619,6 +620,8 @@ void Meshiew::initShaders() {
     };
 
     point_renderers = {
+            new PointRenderer(model_center),
+            new PointRenderer(model_center),
             new PointRenderer(model_center),
     };
 
@@ -632,6 +635,10 @@ void Meshiew::initShaders() {
             new PointCloudRenderer(),
             new PointCloudRenderer(),
             new PointCloudRenderer(),
+    };
+
+    frame_renderers = {
+            new FrameRenderer(),
     };
 
     for (const auto &lr : line_renderers) {
@@ -655,6 +662,11 @@ void Meshiew::initShaders() {
     this->add_renderer(normals_renderer);
     normals_renderer->setVisible(false);
 
+    origin_renderer = std::make_shared<FrameRenderer>();
+    origin_renderer->init();
+    origin_renderer->setScaling(.1);
+    this->add_renderer(origin_renderer);
+
     for (const auto &lr : line_renderers) {
         lr->setVisible(false);
         lr->init();
@@ -674,6 +686,12 @@ void Meshiew::initShaders() {
         pcr->setVisible(false);
         pcr->init();
         this->add_renderer(pcr);
+    }
+
+    for (const auto &fr : frame_renderers) {
+        fr->setVisible(false);
+        fr->init();
+        this->add_renderer(fr);
     }
 }
 
@@ -737,6 +755,9 @@ void Meshiew::initModel() {
     this->normals_renderer->show_vectorfield(mesh_points, normals_attrib);
     this->normals_renderer->set_color(Vector3f(0.0, 1.0, 0.0));
     this->normals_renderer->set_scaling(0.1f);
+
+    Eigen::Affine3f id = Eigen::Affine3f::Identity();
+    this->origin_renderer->show_frame(id.matrix());
 
     auto &scalar_type = mesh.get_vertex_property_type("v:valence");
     auto &vector_type = mesh.get_vertex_property_type("v:normal");
@@ -973,6 +994,10 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         this->normals_renderer->setVisible(normals);
     });
 
+    (new CheckBox(control, "Frame"))->setCallback([this](bool enab) {
+        origin_renderer->setVisible(enab);
+    });
+
     auto line_popup_btn = new PopupButton(rr_pp, "Line");
     auto line_popup = line_popup_btn->popup();
     line_popup->setLayout(new GroupLayout());
@@ -1096,6 +1121,7 @@ void Meshiew::create_gui_elements(nanogui::Window *control, nanogui::Window *inf
         });
 
         auto simulink_btn = new Button(btn->popup(), "Connect to Simulink");
+        simulink_btn->setFlags(Button::RadioButton);
         simulink_btn->setCallback([this, pr, simulink_btn]() {
             simulink_btn->setEnabled(false);
             create_simulink_receiver("localhost", 2222, pr);
@@ -1397,7 +1423,6 @@ void Meshiew::init_timer() {
     t.setInterval([this]() {
         for (const auto &pair : receivers) {
             auto receiver = pair.first;
-            auto pr = pair.second;
             auto values = receiver->read_doubles(3);
             surface_mesh::Point p(
                     values[0],

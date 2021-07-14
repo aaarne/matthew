@@ -295,7 +295,11 @@ void matthew::run_app(Matthew *matt) {
     app->run();
     app->drawAll();
     app->setVisible(true);
-    nanogui::mainloop(0);
+    if (matt->lazy()) {
+      nanogui::mainloop(0);
+    } else {
+      nanogui::mainloop();
+    }
     nanogui::shutdown();
 }
 

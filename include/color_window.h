@@ -19,7 +19,6 @@ protected:
     std::vector<nanogui::IntBox<double>*> boxes;
     bool initialized = false;
 
-
 };
 
 

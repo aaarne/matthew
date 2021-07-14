@@ -17,7 +17,6 @@ public:
     virtual void init() override;
     virtual void do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) override;
     void setPoint(const surface_mesh::Point &p);
-    void addPoint(const surface_mesh::Point &p);
 
     bool is_initialized() const {return this->initialized; }
     void clear();
