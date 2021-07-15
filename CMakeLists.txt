@@ -12,6 +12,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package(NanoGUI)
 find_package(SurfaceMesh)
+find_package(Protobuf)
 
 add_definitions(${NANOGUI_EXTRA_DEFS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/externals/cli)
@@ -50,3 +51,7 @@ add_custom_target(generated_headers DEPENDS ${SHADER_HEADER_NAME})
 
 add_subdirectory(matthew)
 add_subdirectory(cpp)
+
+if (${Protobuf_FOUND})
+    add_subdirectory(mimp_viewer)
+endif()

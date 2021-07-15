@@ -47,3 +47,7 @@ void PointRenderer::do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p)
 void PointRenderer::clear() {
     points.clear();
 }
+
+PointRenderer::PointRenderer() : PointRenderer(Eigen::Vector3f::Zero()) {
+
+}

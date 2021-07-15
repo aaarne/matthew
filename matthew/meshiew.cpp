@@ -664,6 +664,7 @@ void Meshiew::initShaders() {
 
     origin_renderer = std::make_shared<FrameRenderer>();
     origin_renderer->init();
+    origin_renderer->setVisible(false);
     origin_renderer->setScaling(.1);
     this->add_renderer(origin_renderer);
 

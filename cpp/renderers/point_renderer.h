@@ -13,6 +13,7 @@
 
 class PointRenderer : public Renderer {
 public:
+    explicit PointRenderer();
     explicit PointRenderer(Eigen::Vector3f offset);
     virtual void init() override;
     virtual void do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) override;
