@@ -17,6 +17,7 @@ void FrameRenderer::do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p)
 
 void FrameRenderer::init() {
     for (const auto &r :all) r->init();
+    this->show_frame(Eigen::Matrix<float, 4, 4>::Identity());
 }
 
 void FrameRenderer::show_frame(const Eigen::Ref<const Eigen::Matrix<float, 4, 4>> frame) {
