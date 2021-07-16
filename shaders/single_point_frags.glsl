@@ -1,6 +1,7 @@
 #version 330
 out vec4 color;
+uniform vec3 point_color;
 
 void main() {
-    color = vec4(.7, 0.0, .2, 1.0);
+    color = vec4(point_color, 1.0);
 }

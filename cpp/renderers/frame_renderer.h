@@ -7,8 +7,10 @@
 
 
 #include <Eigen/Core>
+#include <memory>
 #include "renderer.h"
 #include "line_renderer.h"
+#include "point_renderer.h"
 
 class FrameRenderer : public Renderer {
 public:
@@ -30,6 +32,8 @@ protected:
     LineRenderer lrx, lry, lrz;
     std::vector<LineRenderer*> all = {&lrx, &lry, &lrz};
     float scaling = 1.0;
+
+    PointRenderer point_renderer;
 };
 
 

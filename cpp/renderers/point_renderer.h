@@ -18,6 +18,8 @@ public:
     virtual void init() override;
     virtual void do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p) override;
     void setPoint(const surface_mesh::Point &p);
+    void setPoint(const Eigen::Vector3f &p);
+    void setColor(const Eigen::Vector3f &color);
 
     bool is_initialized() const {return this->initialized; }
     void clear();
@@ -31,6 +33,8 @@ private:
     nanogui::GLShader shader;
     bool initialized = false;
     std::vector<surface_mesh::Point> points;
+
+    Eigen::Vector3f color;
 };
 
 

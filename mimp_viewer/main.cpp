@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
             state.ParseFromArray(buf, received);
             assert(state.tool_trafo_size() == 16);
             assert(state.coordinates_size() == 3);
-            assert(state.closest_point_size() = 3);
+            assert(state.closest_point_size() == 3);
             for (int row = 0; row < 4; row++) {
                 for (int col = 0; col < 4; col++) {
                     trafo(row, col) = state.tool_trafo(4*row+col);
@@ -47,8 +47,10 @@ int main(int argc, char **argv) {
                 coordinates(i) = state.coordinates(i);
                 closest(i) = state.closest_point(i);
             }
-            viewer->displayClosestPoint(closest);
             viewer->displayToolFrame(trafo);
+            viewer->displayClosestPoint(closest.cast<float>());
+            viewer->displayCoordinates(coordinates.cast<float>());
+            viewer->displayConnectionVector(trafo, closest.cast<float>());
         }
     });
     matthew::run_app(viewer);

@@ -13,7 +13,10 @@ public:
     explicit MimpViewer(const std::string &filename);
 
     virtual void displayToolFrame(const Eigen::Ref<const Eigen::Matrix<float, 4, 4>> frame);
-    virtual void displayClosestPoint(const Eigen::Vector3d &p);
+    virtual void displayClosestPoint(const Eigen::Vector3f &p);
+    virtual void displayCoordinates(const Eigen::Vector3f &c);
+    virtual void displayConnectionVector(const Eigen::Ref<const Eigen::Matrix<float, 4, 4>> frame,
+                                         const Eigen::Vector3f &closest_point);
 
 protected:
     void initShaders() override;
@@ -22,6 +25,12 @@ protected:
 protected:
     std::shared_ptr<FrameRenderer> tool_frame_renderer;
     std::shared_ptr<PointRenderer> closest_point_renderer;
+    std::shared_ptr<LineRenderer> connection_renderer;
+
+    std::vector<nanogui::ProgressBar*> progressbars;
+    std::vector<nanogui::FloatBox<double>*> coordinate_labels;
+
+    bool initialized = false;
 };
 
 

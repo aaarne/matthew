@@ -1422,18 +1422,20 @@ void Meshiew::calc_boundary() {
 
 void Meshiew::init_timer() {
     t.setInterval([this]() {
-        for (const auto &pair : receivers) {
-            auto receiver = pair.first;
-            auto values = receiver->read_doubles(3);
-            surface_mesh::Point p(
-                    values[0],
-                    values[1],
-                    values[2]);
-            pair.second->setPoint(p);
-        }
-        for (const auto &lr : line_renderers) {
-            if (line_renderer_settings[lr].point_trace_mode) {
-                lr->show_line(point_renderers[line_renderer_settings[lr].point_renderer_id]->trace());
+        if (this->visible()) {
+            for (const auto &pair : receivers) {
+                auto receiver = pair.first;
+                auto values = receiver->read_doubles(3);
+                surface_mesh::Point p(
+                        values[0],
+                        values[1],
+                        values[2]);
+                pair.second->setPoint(p);
+            }
+            for (const auto &lr : line_renderers) {
+                if (line_renderer_settings[lr].point_trace_mode) {
+                    lr->show_line(point_renderers[line_renderer_settings[lr].point_renderer_id]->trace());
+                }
             }
         }
     }, 0);

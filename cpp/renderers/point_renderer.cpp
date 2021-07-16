@@ -18,11 +18,16 @@ void PointRenderer::setPoint(const surface_mesh::Point &p) {
     updated = true;
 }
 
+void PointRenderer::setPoint(const Eigen::Vector3f &p) {
+    surface_mesh::Point sp(p(0), p(1), p(2));
+    this->setPoint(sp);
+}
+
 std::vector<surface_mesh::Point> PointRenderer::trace() const {
     return this->points;
 }
 
-PointRenderer::PointRenderer(Eigen::Vector3f offset) : offset(offset) {
+PointRenderer::PointRenderer(Eigen::Vector3f offset) : offset(offset), color(1, 0, 0) {
 
 }
 
@@ -32,6 +37,7 @@ void PointRenderer::do_draw(const Eigen::Matrix4f &mv, const Eigen::Matrix4f &p)
         m.col(0) << point.x, point.y, point.z;
         m.colwise() += offset;
         shader.bind();
+        shader.setUniform("point_color", color);
         shader.uploadAttrib("position", m);
         updated = false;
     }
@@ -51,3 +57,9 @@ void PointRenderer::clear() {
 PointRenderer::PointRenderer() : PointRenderer(Eigen::Vector3f::Zero()) {
 
 }
+
+void PointRenderer::setColor(const Eigen::Vector3f &color) {
+    this->color = color;
+    this->updated = true;
+}
+
