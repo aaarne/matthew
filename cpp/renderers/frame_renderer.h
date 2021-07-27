@@ -26,6 +26,8 @@ public:
     float getScaling() const {return scaling;}
     void setScaling(float s) {this->scaling = s; compute();}
 
+    void set_color(const Eigen::Vector3f &color) {point_renderer.setColor(color);}
+
 protected:
     virtual void compute();
     Eigen::Matrix<float, 4, 4> frame;

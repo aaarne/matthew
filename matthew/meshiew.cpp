@@ -664,8 +664,8 @@ void Meshiew::initShaders() {
 
     origin_renderer = std::make_shared<FrameRenderer>();
     origin_renderer->init();
-    origin_renderer->setVisible(false);
-    origin_renderer->setScaling(.1);
+    origin_renderer->setVisible(true);
+    origin_renderer->set_color(Eigen::Vector3f(0, 0, 0));
     this->add_renderer(origin_renderer);
 
     for (const auto &lr : line_renderers) {
@@ -759,6 +759,7 @@ void Meshiew::initModel() {
 
     Eigen::Affine3f id = Eigen::Affine3f::Identity();
     this->origin_renderer->show_frame(id.matrix());
+    this->origin_renderer->setScaling(dist_max * .3);
 
     auto &scalar_type = mesh.get_vertex_property_type("v:valence");
     auto &vector_type = mesh.get_vertex_property_type("v:normal");

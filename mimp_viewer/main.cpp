@@ -8,15 +8,15 @@
 #include "mimp_state.pb.h"
 #include <sockpp/udp_socket.h>
 
-#define HOST "localhost"
+#define HOST "172.31.1.148"
+//#define HOST "localhost"
 #define PORT 2505
 
 using namespace std;
 
 int main(int argc, char **argv) {
     nanogui::init();
-    std::string filename = "../data/bunny.off";
-    auto viewer = new MimpViewer(filename);
+    auto viewer = new MimpViewer(argv[1]);
 
     sockpp::udp_socket sock;
     sockpp::inet_address addr(HOST, PORT);

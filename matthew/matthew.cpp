@@ -297,6 +297,7 @@ void matthew::run_app(Matthew *matt) {
     app->setVisible(true);
     if (matt->lazy()) {
       nanogui::mainloop(0);
+      cout << "Lazy" << endl;
     } else {
       nanogui::mainloop();
     }

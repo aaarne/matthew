@@ -31,7 +31,7 @@ void FrameRenderer::show_frame(const Eigen::Ref<const Eigen::Matrix<float, 4, 4>
 void FrameRenderer::setVisible(bool visible) {
     Renderer::setVisible(visible);
     for (const auto &r : all) r->setVisible(visible);
-    point_renderer.setVisible(true);
+    point_renderer.setVisible(visible);
 }
 
 void FrameRenderer::compute() {

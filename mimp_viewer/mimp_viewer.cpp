@@ -8,8 +8,11 @@
 #include <nanogui/label.h>
 #include <nanogui/progressbar.h>
 
+#include <Eigen/Core>
+
 using namespace Eigen;
 using namespace nanogui;
+using namespace std;
 
 MimpViewer::MimpViewer(const std::string &filename) : Meshiew(false) {
     this->load_from_file(filename);
@@ -20,9 +23,11 @@ void MimpViewer::initShaders() {
     Meshiew::initShaders();
 
     tool_frame_renderer = std::make_shared<FrameRenderer>();
-    tool_frame_renderer->setScaling(.1);
     tool_frame_renderer->init();
     tool_frame_renderer->setVisible(true);
+    Affine3f id = Affine3f::Identity();
+    tool_frame_renderer->show_frame(id.matrix());
+    tool_frame_renderer->set_color(Eigen::Vector3f(0, 1, 0));
     this->add_renderer(tool_frame_renderer);
 
     closest_point_renderer = std::make_shared<PointRenderer>();
@@ -57,6 +62,7 @@ MimpViewer::displayConnectionVector(const Eigen::Ref<const Eigen::Matrix<float, 
 
 void MimpViewer::create_gui_elements(nanogui::Window *control, nanogui::Window *info) {
     Meshiew::create_gui_elements(control, info);
+    this->tool_frame_renderer->setScaling(.3f*this->dist_max);
     control->setVisible(false);
 
     auto coordinates_window = new nanogui::Window(this, "Coordinates");
@@ -94,7 +100,7 @@ void MimpViewer::create_gui_elements(nanogui::Window *control, nanogui::Window *
 }
 
 const std::vector<std::pair<float, float>> bounds = {
-        {0, 1.0},
+        {-10.0, 10.0},
         {-M_PI, M_PI},
         {-M_PI, M_PI},
 };
