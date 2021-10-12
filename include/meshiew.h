@@ -77,9 +77,11 @@ protected:
 
     static Point computeCenter(Surface_mesh *mesh);
 
-    void initModel();
+    void initModel() override;
 
     void initShaders() override;
+
+    void update_mesh_points();
 
     Eigen::Vector3f get_model_center() override;
 

@@ -697,19 +697,9 @@ void Meshiew::initShaders() {
 }
 
 void Meshiew::initModel() {
-    mesh_center = computeCenter(&mesh);
-    dist_max = 0.0f;
-    for (auto v: mesh.vertices()) {
-        if (distance(mesh_center, mesh.position(v)) > dist_max) {
-            dist_max = distance(mesh_center, mesh.position(v));
-        }
-    }
-
     meshProcess();
 
     int j = 0;
-    auto vertex_normal = mesh.vertex_property<Point>("v:normal");
-    MatrixXf mesh_points(3, mesh.n_vertices());
     MatrixXi indices(3, mesh.n_faces());
 
     for (const auto &f: mesh.faces()) {
@@ -723,26 +713,9 @@ void Meshiew::initModel() {
         ++j;
     }
 
-    MatrixXf normals_attrib(3, mesh.n_vertices());
-
-    j = 0;
-    for (const auto &v: mesh.vertices()) {
-        mesh_points.col(j) << mesh.position(v).x,
-                mesh.position(v).y,
-                mesh.position(v).z;
-
-        normals_attrib.col(j) << vertex_normal[v].x,
-                vertex_normal[v].y,
-                vertex_normal[v].z;
-
-        ++j;
-    }
-
-    this->mesh_points = mesh_points;
     mShader.bind();
     mShader.uploadIndices(indices);
-    mShader.uploadAttrib("position", mesh_points);
-    mShader.uploadAttrib("normal", normals_attrib);
+    update_mesh_points();
     mShader.setUniform("color_mode", int(color_mode));
     mShader.setUniform("intensity", base_color);
     mShader.setUniform("broken_normals", (int) false);
@@ -753,7 +726,6 @@ void Meshiew::initModel() {
     mShader.setUniform("shininess", 8);
 
     upload_color("v:valence");
-    this->normals_renderer->show_vectorfield(mesh_points, normals_attrib);
     this->normals_renderer->set_color(Vector3f(0.0, 1.0, 0.0));
     this->normals_renderer->set_scaling(0.1f);
 
@@ -778,6 +750,17 @@ void Meshiew::initModel() {
         p.first->show_isolines(mesh, p.second.prop_name, p.second.n_lines);
     }
 
+    auto vertex_normal = mesh.vertex_property<Point>("v:normal");
+    MatrixXf normals_attrib(3, mesh.n_vertices());
+    j = 0;
+    for (const auto &v: mesh.vertices()) {
+        normals_attrib.col(j) << vertex_normal[v].x,
+                vertex_normal[v].y,
+                vertex_normal[v].z;
+
+        ++j;
+    }
+
     for (const auto &vr : vectorfield_renderers) {
         vr->show_vectorfield(mesh_points, normals_attrib);
         vr->set_scaling(0.1f);
@@ -788,6 +771,40 @@ void Meshiew::initModel() {
         pcr->show_points(mesh_points);
     }
 
+}
+
+void Meshiew::update_mesh_points() {
+    mesh_center = computeCenter(&mesh);
+    dist_max = 0.0f;
+    for (auto v: mesh.vertices()) {
+        if (distance(mesh_center, mesh.position(v)) > dist_max) {
+            dist_max = distance(mesh_center, mesh.position(v));
+        }
+    }
+    auto vertex_normal = mesh.vertex_property<Point>("v:normal");
+    MatrixXf mesh_points(3, mesh.n_vertices());
+    MatrixXf normals_attrib(3, mesh.n_vertices());
+
+    int j = 0;
+    for (const auto &v: mesh.vertices()) {
+        mesh_points.col(j) << mesh.position(v).x,
+                mesh.position(v).y,
+                mesh.position(v).z;
+
+        normals_attrib.col(j) << vertex_normal[v].x,
+                vertex_normal[v].y,
+                vertex_normal[v].z;
+
+        ++j;
+    }
+
+    mShader.bind();
+    mShader.uploadAttrib("position", mesh_points);
+    mShader.uploadAttrib("normal", normals_attrib);
+
+    this->normals_renderer->show_vectorfield(mesh_points, normals_attrib);
+
+    this->mesh_points = mesh_points;
 }
 
 Point Meshiew::computeCenter(Surface_mesh *mesh) {
@@ -1451,17 +1468,19 @@ void Meshiew::calc_mean_curvature() {
     property_map["Mean Curvature"] = "v:curvature";
     Surface_mesh::Vertex_property<Scalar> v_curvature = mesh.vertex_property<Scalar>("v:curvature", 0);
     Surface_mesh::Vertex_property<Vec3> v_laplacian = mesh.vertex_property<Vec3>("Laplacian", Vec3(0, 0, 0));
-    Surface_mesh::Edge_property<Scalar> e_weight = mesh.edge_property<Scalar>("e:weight", 0);
-    Surface_mesh::Vertex_property<Scalar> v_weight = mesh.vertex_property<Scalar>("v:weight", 0);
+    Surface_mesh::Edge_property<Scalar> e_weight = mesh.get_edge_property<Scalar>("e:weight");
+    Surface_mesh::Vertex_property<Scalar> v_weight = mesh.get_vertex_property<Scalar>("v:weight");
     Point laplace(0.0);
 
     for (const auto &v : mesh.vertices()) {
         laplace = 0;
+        double weights = 0;
         for (const auto &v2 : mesh.vertices(v)) {
             Surface_mesh::Edge e = mesh.find_edge(v, v2);
             laplace += e_weight[e] * (mesh.position(v2) - mesh.position(v));
+            weights += e_weight[e];
         }
-        laplace *= v_weight[v];
+        laplace *= 1/weights;
         v_laplacian[v] = laplace;
         v_curvature[v] = norm(laplace);
     }
@@ -1534,3 +1553,4 @@ void Meshiew::calc_principal_curvature_directions() {
          << "ms." << endl;
 
 }
+

@@ -9,6 +9,7 @@ get_filename_component(PROJECTNAME ${CMAKE_CURRENT_LIST_DIR} NAME)
 project(${PROJECTNAME})
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+LIST(APPEND CMAKE_PREFIX_PATH "/volume/software/common/cmake/$ENV{DLRRM_HOST_PLATFORM}")
 
 find_package(NanoGUI)
 find_package(SurfaceMesh)
@@ -55,3 +56,5 @@ add_subdirectory(cpp)
 if (${Protobuf_FOUND})
     add_subdirectory(mimp_viewer)
 endif()
+
+add_subdirectory(embedding_solver)
