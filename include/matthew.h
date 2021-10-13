@@ -12,7 +12,7 @@
 class Matthew : public nanogui::Screen {
 public:
     explicit Matthew(bool fs);
-    virtual ~Matthew() = default;
+    ~Matthew() override = default;
 
     void run();
 

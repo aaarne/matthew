@@ -15,7 +15,6 @@ int main(int argc, char **argv) {
     double x, y;
     std::vector<std::tuple<double, double, double>> values;
     while(vertex_reader.read_row(x, y)) {
-//        double z = sqrt(x*x + y*y);
         double z = 0;
         values.emplace_back(x, y, z);
     }
@@ -57,5 +56,6 @@ int main(int argc, char **argv) {
 
     nanogui::init();
     auto viewer = new EmbeddingSolver(points, faces, edges, target_lengths);
+    viewer->setLazyMode(true);
     matthew::run_app(viewer);
 }

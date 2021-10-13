@@ -21,6 +21,7 @@ Matthew::Matthew(bool fs) :
         nanogui::Screen(Eigen::Vector2i(1680, 1050), "Matthew", true, fs), demo_mode(fs) {
 }
 
+
 bool Matthew::has_ending(std::string const &fullString, std::string const &ending) {
     if (fullString.length() >= ending.length()) {
         return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
@@ -292,12 +293,17 @@ std::vector<std::string> Matthew::additional_data_files(const string &ending) co
 
 void matthew::run_app(Matthew *matt) {
     nanogui::ref<Matthew> app = matt;
+
+    GLFWmonitor *mon = glfwGetPrimaryMonitor();
+    const GLFWvidmode *mode = glfwGetVideoMode(mon);
+
+    app->setSize(Eigen::Vector2i(mode->width, mode->height));
     app->run();
     app->drawAll();
     app->setVisible(true);
     if (matt->lazy()) {
-      nanogui::mainloop(0);
       cout << "Lazy" << endl;
+      nanogui::mainloop(0);
     } else {
       nanogui::mainloop();
     }
