@@ -35,6 +35,8 @@ protected:
         long n_iterations = 1000000;
         bool auto_detect_convergence = true;
         double min_vel = 1e-3;
+        double diffusion_rate = 0.0;
+        int smooting_iterations = 0;
     };
 
     bool optimize(const optimization_parameters &params, bool quiet = false);
@@ -45,7 +47,7 @@ protected:
                          double z_force = 0, bool center_z_force = false,
                          double normal_force = 0.0, double stiffness = 1.0);
 
-    void diffusion(double rate, int iterations);
+    void diffusion(double rate, int iterations = 1);
 
 
     class ScheduleStep {
@@ -97,13 +99,24 @@ protected:
             return *this;
         }
 
+        ScheduleStep& diffusion_rate(double r) {
+            p.diffusion_rate = r;
+            return *this;
+        }
+
+        ScheduleStep& smoothing_iterations(int i) {
+            p.smooting_iterations = i;
+            return *this;
+        }
+
         std::string desc;
         optimization_parameters p;
     };
 
 private:
-    nanogui::FloatBox<double> *error_box, *min_vel_box, *stiffness_box, *z_force_box, *rate_box, *vel_box, *normal_force_box;
+    nanogui::FloatBox<double> *error_box, *min_vel_box, *stiffness_box, *z_force_box, *rate_box, *vel_box, *normal_force_box, *diffusion_rate_box;
     nanogui::IntBox<long> *total_iterations_box;
+    nanogui::IntBox<int> *smoothing_iterations_box;
     nanogui::TextBox *status_box;
 
     long iterations = 0;

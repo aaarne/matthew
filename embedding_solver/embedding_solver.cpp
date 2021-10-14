@@ -55,13 +55,13 @@ EmbeddingSolver::EmbeddingSolver(Eigen::MatrixXd &vertices,
 
     Vertex boundary_handle;
     Surface_mesh::Halfedge start;
-    for (const auto &v : mesh.vertices()) {
+    for (const auto &v: mesh.vertices()) {
         if (mesh.is_boundary(v)) {
             boundary_handle = v;
             break;
         }
     }
-    for (const auto &half : mesh.halfedges(boundary_handle)) {
+    for (const auto &half: mesh.halfedges(boundary_handle)) {
         if (mesh.is_boundary(half)) {
             start = half;
             break;
@@ -80,7 +80,7 @@ EmbeddingSolver::EmbeddingSolver(Eigen::MatrixXd &vertices,
 
     cout << "Circumference (Riemannian): " << length << endl;
     cout << "Circumference (Euclidean): " << eucl_length << endl;
-    for (const auto &v : mesh.vertices()) {
+    for (const auto &v: mesh.vertices()) {
         mesh.position(v) *= new_radius;
     }
 
@@ -146,6 +146,14 @@ void EmbeddingSolver::create_gui_elements(nanogui::Window *control, nanogui::Win
     normal_force_box = new FloatBox<double>(embedding_window, 0.0);
     normal_force_box->setEditable(true);
 
+    new Label(embedding_window, "Laplacian Smoothing");
+    diffusion_rate_box = new FloatBox<double>(embedding_window, 0.0);
+    diffusion_rate_box->setEditable(true);
+
+    new Label(embedding_window, "Smooting Iterations");
+    smoothing_iterations_box = new IntBox<int>(embedding_window, 0);
+    smoothing_iterations_box->setEditable(true);
+
     new Label(embedding_window, "Integration Rate");
     rate_box = new FloatBox<double>(embedding_window, 0.1);
     rate_box->setEditable(true);
@@ -154,7 +162,7 @@ void EmbeddingSolver::create_gui_elements(nanogui::Window *control, nanogui::Win
     boundary_check->setChecked(true);
 
     auto visualize_box = new CheckBox(embedding_window, "Visualize");
-    visualize_box->setChecked(false);
+    visualize_box->setChecked(true);
 
     auto do_btn = new Button(embedding_window, "Run");
     auto run_succ_box = new CheckBox(embedding_window, "Successful");
@@ -172,6 +180,8 @@ void EmbeddingSolver::create_gui_elements(nanogui::Window *control, nanogui::Win
                 params.n_iterations = iterations_box->value();
                 params.auto_detect_convergence = auto_detect_convergence_box->checked();
                 params.min_vel = min_vel_box->value();
+                params.diffusion_rate = diffusion_rate_box->value();
+                params.smooting_iterations = smoothing_iterations_box->value();
                 run_succ_box->setChecked(optimize(params, !visualize_box->checked()));
                 update();
                 drawAll();
@@ -250,7 +260,7 @@ EmbeddingSolver::relax_springs(double rate, bool keep_boundary, double z_force, 
 
     if (normal_force != 0) {
         auto normals = mesh.get_vertex_property<surface_mesh::Vec3>("v:normal");
-        for (const auto &v : mesh.vertices()) {
+        for (const auto &v: mesh.vertices()) {
             Eigen::Vector3d n;
             n << normals[v].x, normals[v].y, normals[v].z;
             additional_forces.row(v.idx()) += normal_force * n;
@@ -296,6 +306,9 @@ void EmbeddingSolver::diffusion(double rate, int iterations) {
 
     for (int i = 0; i < mesh.n_vertices(); i++) {
         const auto &v = Vertex(i);
+
+        if (mesh.is_boundary(v)) continue;
+
         double sum = 0;
         for (const auto &h: mesh.halfedges(v)) {
             sum += e_weight[mesh.edge(h)];
@@ -345,18 +358,21 @@ bool EmbeddingSolver::optimize(const optimization_parameters &params, bool quiet
         double err = relax_springs(
                 params.rate, params.keep_boundary, params.z_force, params.z_force_only_at_center,
                 params.normal_force, params.stiffness);
+        if (params.smooting_iterations > 0) {
+            diffusion(params.diffusion_rate, params.smooting_iterations);
+        }
         if (!quiet && (n % 100 == 0)) {
             this->update();
             this->drawAll();
         }
 
-        if ((params.normal_force != 0) && (n % int(1/params.rate) == 0)) {
+        if ((params.normal_force != 0) && (n % int(1 / params.rate) == 0)) {
             mesh.update_vertex_normals();
         }
 
         if (params.auto_detect_convergence) {
             if (use_vel) {
-                for (const auto &v : mesh.vertices())
+                for (const auto &v: mesh.vertices())
                     mp.row(v.idx()) << mesh.position(v).x, mesh.position(v).y, mesh.position(v).z;
                 double velocity = (mp - mp_last).norm();
                 mp_last = mp;
@@ -376,86 +392,20 @@ bool EmbeddingSolver::optimize(const optimization_parameters &params, bool quiet
 bool EmbeddingSolver::optimize_auto(bool quiet) {
     std::vector<ScheduleStep> schedule;
 
-
     schedule.push_back(ScheduleStep("Pulling Down")
                                .z_force(-0.01)
                                .min_vel(1e-3));
 
-    schedule.push_back(ScheduleStep("Releasing Force")
-                               .z_force(-0.001)
-                               .min_vel(1e-4));
-
-    schedule.push_back(ScheduleStep("Inflating")
+    schedule.push_back(ScheduleStep("Finalize")
                                .z_force(-0.001)
                                .normal_force(-0.001)
-                               .min_vel(1e-3));
-
-    for (int i = 1; i <= 10; i++) {
-        schedule.push_back(ScheduleStep("Increasing Stiffness Slowly")
-                                   .z_force(-0.001)
-                                   .normal_force(-0.001)
-                                   .stiffness(1.0 + i / 10.0)
-                                   .rate(0.1)
-                                   .min_vel(5e-3));
-    }
-
-    for (int i = 2; i <= 5; i++) {
-        schedule.push_back(ScheduleStep("Increasing Stiffness")
-                                   .z_force(-0.001)
-                                   .normal_force(-0.001)
-                                   .stiffness(i)
-                                   .rate(0.05)
-                                   .min_vel(5e-4));
-    }
-
-    for (int i = 6; i <= 20; i++) {
-        schedule.push_back(ScheduleStep("Increasing Stiffness Faster")
-                                   .z_force(-0.001)
-                                   .normal_force(-0.001)
-                                   .stiffness(i)
-                                   .rate(0.01)
-                                   .min_vel(5e-5));
-    }
-
-//    for (int i = 10; i >= 5; i--) {
-//        schedule.push_back(ScheduleStep("Lowering Exterior Forces")
-//        .z_force(i * -1e-4)
-//        .normal_force(i * -1e-4)
-//        .stiffness(10)
-//        .rate(0.01)
-//        .min_vel(1e-4));
-//    }
-
-
-//    schedule.push_back(ScheduleStep("Lowering Exterior Forces")
-//                               .z_force(-0.0001)
-//                               .stiffness(10)
-//                               .normal_force(-0.001)
-//                               .rate(0.01)
-//                               .min_vel(1e-4));
-
-
-//    std::vector<double> zforces = {-1e-2, -5e-3, -1e-3, -5e-4, -1e-4, 5e-5, 1e-5, 5e-6, 1e-6};
-//    std::transform(zforces.begin(), zforces.end(), std::back_inserter(schedule), [](double z) {
-//        return ScheduleStep("Lowering Gravity").z_force(z).normal_force(z).min_vel(1e-2);
-//    });
-//
-//    schedule.push_back(ScheduleStep("Refinement")
-//                               .rate(0.2)
-//                               .z_force(0.0)
-//                               .normal_force(-1e-4)
-//                               .min_vel(5e-4));
-//
-//    schedule.push_back(ScheduleStep("Only Internal Forces")
-//                               .rate(0.2)
-//                               .min_vel(-1e-3));
-//
-//    schedule.push_back(ScheduleStep("Finalize").rate(0.3).min_vel(1e-4));
-
+                               .stiffness(20)
+                               .rate(0.01)
+                               .min_vel(5e-6));
 
     bool success = true;
 
-    for (const auto &step : schedule) {
+    for (const auto &step: schedule) {
         rate_box->setValue(step.p.rate);
         stiffness_box->setValue(step.p.stiffness);
         status_box->setValue(step.desc);
