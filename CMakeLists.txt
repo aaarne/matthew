@@ -56,5 +56,3 @@ add_subdirectory(cpp)
 if (${Protobuf_FOUND})
     add_subdirectory(mimp_viewer)
 endif()
-
-add_subdirectory(embedding_solver)
