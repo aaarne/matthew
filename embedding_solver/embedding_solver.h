@@ -36,6 +36,7 @@ protected:
         bool auto_detect_convergence = true;
         double min_vel = 1e-3;
         double diffusion_rate = 0.0;
+        double hinge_force = 0.0;
         int smooting_iterations = 0;
     };
 
@@ -45,9 +46,11 @@ protected:
 
     double relax_springs(double rate, bool keep_boundary,
                          double z_force = 0, bool center_z_force = false,
-                         double normal_force = 0.0, double stiffness = 1.0);
+                         double normal_force = 0.0, double stiffness = 1.0, double hinge_forces = 0.0);
 
     void diffusion(double rate, int iterations = 1);
+
+    Eigen::MatrixX3d hinge_forces();
 
 
     class ScheduleStep {
@@ -71,6 +74,11 @@ protected:
 
         ScheduleStep& normal_force(double f) {
             p.normal_force = f;
+            return *this;
+        }
+
+        ScheduleStep& hinge_force(double f) {
+            p.hinge_force = f;
             return *this;
         }
 
@@ -120,6 +128,7 @@ private:
     nanogui::TextBox *status_box;
 
     long iterations = 0;
+    std::vector<double> error_history;
 };
 
 

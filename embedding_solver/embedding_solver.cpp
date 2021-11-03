@@ -2,6 +2,7 @@
 // Created by sach_ar on 10/8/21.
 //
 
+#include <fstream>
 #include "embedding_solver.h"
 #include <nanogui/label.h>
 #include <nanogui/layout.h>
@@ -13,6 +14,7 @@
 
 using namespace std;
 using surface_mesh::Surface_mesh;
+using namespace surface_mesh;
 
 EmbeddingSolver::EmbeddingSolver(Eigen::MatrixXd &vertices,
                                  Eigen::MatrixXi &faces,
@@ -110,6 +112,9 @@ void EmbeddingSolver::create_gui_elements(nanogui::Window *control, nanogui::Win
     auto embedding_window = new nanogui::Window(this, "Embedding Solver");
     embedding_window->setLayout(new GroupLayout());
 
+    auto auto_window = new nanogui::Window(this, "Auto");
+    auto_window->setLayout(new GroupLayout());
+
     new Label(embedding_window, "Total Iterations");
     total_iterations_box = new IntBox<long>(embedding_window, 0);
 
@@ -154,6 +159,10 @@ void EmbeddingSolver::create_gui_elements(nanogui::Window *control, nanogui::Win
     smoothing_iterations_box = new IntBox<int>(embedding_window, 0);
     smoothing_iterations_box->setEditable(true);
 
+    new Label(embedding_window, "Hinge Forces");
+    auto hinge_forces_box = new FloatBox<double>(embedding_window, 0.0);
+    hinge_forces_box->setEditable(true);
+
     new Label(embedding_window, "Integration Rate");
     rate_box = new FloatBox<double>(embedding_window, 0.1);
     rate_box->setEditable(true);
@@ -169,7 +178,7 @@ void EmbeddingSolver::create_gui_elements(nanogui::Window *control, nanogui::Win
     run_succ_box->setEnabled(false);
 
     do_btn->setCallback(
-            [this, boundary_check, iterations_box, auto_detect_convergence_box, visualize_box, run_succ_box, at_center_box]() {
+            [this, boundary_check, iterations_box, auto_detect_convergence_box, visualize_box, run_succ_box, at_center_box, hinge_forces_box]() {
                 optimization_parameters params;
                 params.rate = rate_box->value();
                 params.keep_boundary = boundary_check->checked();
@@ -182,20 +191,28 @@ void EmbeddingSolver::create_gui_elements(nanogui::Window *control, nanogui::Win
                 params.min_vel = min_vel_box->value();
                 params.diffusion_rate = diffusion_rate_box->value();
                 params.smooting_iterations = smoothing_iterations_box->value();
+                params.hinge_force = hinge_forces_box->value();
                 run_succ_box->setChecked(optimize(params, !visualize_box->checked()));
                 update();
                 drawAll();
             });
 
-    new Label(embedding_window, "Automatic Schedule");
+    new Label(auto_window, "Automatic Schedule");
 
-    status_box = new TextBox(embedding_window, "NONE");
+    status_box = new TextBox(auto_window, "NONE");
 
-    auto auto_btn = new Button(embedding_window, "Auto");
-    auto auto_succ_box = new CheckBox(embedding_window, "Successful");
+    auto auto_btn = new Button(auto_window, "Auto");
+    auto auto_succ_box = new CheckBox(auto_window, "Successful");
     auto_succ_box->setEnabled(false);
     auto_btn->setCallback([this, boundary_check, visualize_box, auto_succ_box]() {
         auto_succ_box->setChecked(this->optimize_auto(!visualize_box->checked()));
+    });
+
+    new Label(auto_window, "Error History");
+    (new Button(auto_window, "Write CSV"))->setCallback([this](){
+        ofstream f("error.csv");
+        for (const auto &v : error_history) f << v << ",";
+        f << compute_total_error() << endl;
     });
 
     this->color_coding_window->setVisible(true);
@@ -233,7 +250,7 @@ void EmbeddingSolver::initShaders() {
 
 double
 EmbeddingSolver::relax_springs(double rate, bool keep_boundary, double z_force, bool only_at_center,
-                               double normal_force, double stiffness) {
+                               double normal_force, double stiffness, double hinge_force) {
     auto target_length = mesh.get_edge_property<double>("e:target_length");
     Eigen::MatrixXd internal_forces, additional_forces, total_forces;
     internal_forces.setZero(mesh.n_vertices(), 3);
@@ -267,6 +284,10 @@ EmbeddingSolver::relax_springs(double rate, bool keep_boundary, double z_force, 
         }
     }
 
+    if (hinge_force != 0.0) {
+        additional_forces += hinge_force * hinge_forces();
+    }
+
     total_forces = internal_forces + additional_forces;
 
     if (keep_boundary) {
@@ -283,6 +304,7 @@ EmbeddingSolver::relax_springs(double rate, bool keep_boundary, double z_force, 
     }
 
     iterations++;
+
     return internal_forces.norm();
 }
 
@@ -291,6 +313,7 @@ void EmbeddingSolver::update() {
     update_ratio();
     upload_color("Ratio");
     update_mesh_points();
+    this->recenter();
     mesh.update_face_normals();
     mesh.update_vertex_normals();
     error_box->setValue(compute_total_error());
@@ -355,9 +378,9 @@ bool EmbeddingSolver::optimize(const optimization_parameters &params, bool quiet
         mp.setZero(mesh.n_vertices(), 3);
     }
     for (long n = 0; n < params.n_iterations; n++) {
-        double err = relax_springs(
+        relax_springs(
                 params.rate, params.keep_boundary, params.z_force, params.z_force_only_at_center,
-                params.normal_force, params.stiffness);
+                params.normal_force, params.stiffness, params.hinge_force);
         if (params.smooting_iterations > 0) {
             diffusion(params.diffusion_rate, params.smooting_iterations);
         }
@@ -370,6 +393,9 @@ bool EmbeddingSolver::optimize(const optimization_parameters &params, bool quiet
             mesh.update_vertex_normals();
         }
 
+        double total_error = compute_total_error();
+        error_history.push_back(total_error);
+
         if (params.auto_detect_convergence) {
             if (use_vel) {
                 for (const auto &v: mesh.vertices())
@@ -379,29 +405,85 @@ bool EmbeddingSolver::optimize(const optimization_parameters &params, bool quiet
                 this->vel_box->setValue(velocity);
                 if (velocity < params.min_vel) return true;
             } else {
-                if (err < params.min_vel) return true;
+                if (total_error < params.min_vel) return true;
             }
         }
     }
     if (params.auto_detect_convergence) {
         cout << "Didn't converge after " << params.n_iterations << " steps. Aborting optimization." << endl;
     }
-    return false;
+    return !params.auto_detect_convergence;
 }
 
 bool EmbeddingSolver::optimize_auto(bool quiet) {
     std::vector<ScheduleStep> schedule;
 
-    schedule.push_back(ScheduleStep("Pulling Down")
-                               .z_force(-0.01)
-                               .min_vel(1e-3));
+//    schedule.push_back(ScheduleStep("Pulling Down")
+//                               .z_force(-0.01)
+//                               .min_vel(1e-3));
+//
+//    schedule.push_back(ScheduleStep("Finalize")
+//                               .z_force(-0.001)
+//                               .normal_force(-0.001)
+//                               .stiffness(20)
+//                               .rate(0.01)
+//                               .min_vel(5e-6));
 
-    schedule.push_back(ScheduleStep("Finalize")
-                               .z_force(-0.001)
-                               .normal_force(-0.001)
-                               .stiffness(20)
-                               .rate(0.01)
-                               .min_vel(5e-6));
+    schedule.push_back(ScheduleStep("Freestyle")
+                               .normal_force(-0.005)
+                               .n_iterations(20000)
+                               .keep_boundary(false)
+                               .rate(0.2)
+                               .min_vel(0.01)
+                               .auto_detect_convergence(false));
+    for (int i = 0; i < 5; ++i) {
+        stringstream ss, sss;
+        ss << "Inflating " << i + 1;
+        schedule.push_back(ScheduleStep(ss.str())
+                                   .normal_force(-0.005)
+                                   .n_iterations(60000)
+                                   .keep_boundary(true)
+                                   .rate(0.2)
+                                   .min_vel(0.01)
+                                   .auto_detect_convergence(true));
+
+
+        sss << "Relaxing " << i + 1;
+        schedule.push_back(ScheduleStep(sss.str())
+                                   .normal_force(0)
+                                   .n_iterations(100000)
+                                   .keep_boundary(false)
+                                   .rate(0.2)
+                                   .min_vel(1)
+                                   .auto_detect_convergence(true));
+    }
+
+    schedule.push_back(ScheduleStep("Lowering Error")
+                               .normal_force(0)
+                               .n_iterations(100000)
+                               .keep_boundary(false)
+                               .rate(0.2)
+                               .min_vel(.1)
+                               .auto_detect_convergence(true));
+
+//    schedule.push_back(
+//            ScheduleStep("Hinge")
+//                    .normal_force(0)
+//                    .n_iterations(100000)
+//                    .keep_boundary(false)
+//                    .hinge_force(.5)
+//                    .rate(0.2)
+//                    .min_vel(0.01)
+//                    .auto_detect_convergence(true));
+//
+//    schedule.push_back(
+//            ScheduleStep("Finalize")
+//                    .normal_force(0)
+//                    .n_iterations(100000)
+//                    .keep_boundary(false)
+//                    .rate(0.2)
+//                    .min_vel(1e-2)
+//                    .auto_detect_convergence(true));
 
     bool success = true;
 
@@ -423,5 +505,41 @@ bool EmbeddingSolver::optimize_auto(bool quiet) {
     }
 
     return success;
+}
+
+double signum(double v) {
+    if (v > 0.0) return 1.0;
+    else if (v < 0.0) return -1.0;
+    else return 0.0;
+}
+
+Eigen::MatrixX3d EmbeddingSolver::hinge_forces() {
+    Eigen::MatrixX3d f;
+    f.setZero(mesh.n_vertices(), 3);
+
+    for (const auto &e: mesh.edges()) {
+        if (mesh.is_boundary(e)) continue;
+        auto h1 = mesh.halfedge(e, 0);
+        auto h2 = mesh.halfedge(e, 1);
+        auto n1 = mesh.compute_face_normal(mesh.face(h1));
+        auto n2 = mesh.compute_face_normal(mesh.face(h2));
+        const double phi = std::acos(surface_mesh::dot(n1, n2) / (norm(n1) * norm(n2)));
+        if (isnan(phi)) continue;
+        auto v1 = mesh.to_vertex(mesh.next_halfedge(h1));
+        auto v2 = mesh.to_vertex(mesh.next_halfedge(h2));
+        auto edge_vector = mesh.position(mesh.to_vertex(h1)) - mesh.position(mesh.from_vertex(h1));
+        double dedge_v1 =
+                norm(cross(mesh.position(mesh.to_vertex(h1)) - mesh.position(v1), edge_vector)) / norm(edge_vector);
+        double dedge_v2 =
+                norm(cross(mesh.position(mesh.to_vertex(h2)) - mesh.position(v2), edge_vector)) / norm(edge_vector);
+        double signed_force1 = signum(dot(cross(edge_vector, n1), n2)) * mesh.edge_length(e) * dedge_v1 * phi * phi;
+        double signed_force2 = signum(dot(cross(-edge_vector, n2), n1)) * mesh.edge_length(e) * dedge_v2 * phi * phi;
+        Eigen::RowVector3d ne1, ne2;
+        ne1 << n1.x, n1.y, n1.z;
+        ne2 << n2.x, n2.y, n2.z;
+        f.row(v1.idx()) += signed_force1 * ne1;
+        f.row(v2.idx()) += signed_force2 * ne2;
+    }
+    return f;
 }
 

@@ -55,6 +55,8 @@ protected:
 
     std::vector<std::string> additional_data_files(const std::string &ending) const;
 
+    virtual void recenter();
+
 protected:
 
     bool lazy_mode = false;
@@ -83,9 +85,9 @@ private:
     std::shared_ptr<Grid> grid;
     std::vector<std::shared_ptr<Renderer>> renderers;
 
+    CameraParameters cam;
     nanogui::Window* control;
     nanogui::Window* info;
-    CameraParameters cam;
     void computeCameraMatrices(Eigen::Matrix4f &model,
                                Eigen::Matrix4f &view,
                                Eigen::Matrix4f &proj);

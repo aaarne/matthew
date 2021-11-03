@@ -291,6 +291,10 @@ std::vector<std::string> Matthew::additional_data_files(const string &ending) co
     return filenames;
 }
 
+void Matthew::recenter() {
+    cam.modelTranslation = -get_model_center();
+}
+
 void matthew::run_app(Matthew *matt) {
     nanogui::ref<Matthew> app = matt;
 
